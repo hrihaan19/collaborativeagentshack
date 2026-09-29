@@ -2,7 +2,7 @@
 # Hospital machine: SuperNode (outbound-only to SuperLink) + local console on 127.0.0.1.
 # Usage: scripts/start-hospital.sh A|B|C [supernode-port] [console-port]
 . "$(dirname "$0")/common.sh"
-HID="${1:?hospital id A|B|C}"; HID="${HID^^}"
+HID="$(echo "${1:?hospital id A|B|C}" | tr a-z A-Z)"
 SN_PORT="${2:-$SUPERNODE_PORT}"; CON_PORT="${3:-$HOSPITAL_CONSOLE_PORT}"
 case "$HID" in A) PART=0;; B) PART=1;; C) PART=2;; *) echo "hospital id must be A, B or C"; exit 1;; esac
 STATE_DIR="$ROOT/state/hospital-$(echo "$HID" | tr 'A-Z' 'a-z')"
