@@ -1,0 +1,99 @@
+[92mINFO [0m:      Starting Flower SuperNode
+[93mWARNING [0m:   Option `--insecure` was set. Starting insecure channel to 127.0.0.1:9092.
+INFO:     Started server process [1835]
+INFO:     Waiting for application startup.
+[92mINFO [0m:      FastAPI lifespan: startup
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9095 (Press CTRL+C to quit)
+[92mINFO [0m:      SuperNode ID: 10112905917919172903
+[92mINFO [0m:      Starting Flower SuperExec
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.91 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 1.59 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 3.13 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 7.46 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 8.64 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.03 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 8.36 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.82 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 10.01 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 2.96 seconds
+[92mINFO [0m:      Connection successful after 40.98 seconds and 8 tries.
+[92mINFO [0m:      Connection successful after 29.23 seconds and 4 tries.
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.31 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.61 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 3.10 seconds
+[92mINFO [0m:      Connection successful after 4.02 seconds and 4 tries.
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND screen_request-66c9fef7]
+[92mINFO [0m:      Receiving: query message (ID: a8e571e6bebf40fef2b7c148860c480d664b5fe1b1465a2c05bd653ed189baf4)
+[92mINFO [0m:      Received successfully
+[92mINFO [0m:      Start `flwr-clientapp` process
+[92mINFO [0m:      
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND screen_request-66c9fef7]
+[92mINFO [0m:      Sending: query message (ID: 5700eafd6f9811eec572f66ea4555342e50ff539c0e31b98bd4f3cd6bab12aa9)
+[92mINFO [0m:      Sent successfully
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND screen_request-6dae9b48]
+[92mINFO [0m:      Receiving: query message (ID: 195f35d3670f1126d6917ae335bd2790502820f43ba3c56ac90272fd1b17c272)
+[92mINFO [0m:      Received successfully
+[92mINFO [0m:      Start `flwr-clientapp` process
+[92mINFO [0m:      
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND screen_request-6dae9b48]
+[92mINFO [0m:      Sending: query message (ID: 6b88889ac36970974d3cf6a3810821c76d48b9c5e6a0657032117cafa23396ba)
+[92mINFO [0m:      Sent successfully
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND plan_prepare-fdc82805]
+[92mINFO [0m:      Receiving: query message (ID: 07ea63f758a7f8d085aa9faec6f196b458c410c337ff3147bbf4bdd1cd8d02e7)
+[92mINFO [0m:      Received successfully
+[92mINFO [0m:      Start `flwr-clientapp` process
+[92mINFO [0m:      
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND plan_prepare-fdc82805]
+[92mINFO [0m:      Sending: query message (ID: a5117debfae37038605cba5d7f4a659200c8e09f336ddca8e01b60cd56589564)
+[92mINFO [0m:      Sent successfully
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND review_status-be93de4e]
+[92mINFO [0m:      Receiving: query message (ID: f08d5c2c4e9f547e439bfb46f02add8ebf1b983e1c78725a4930874e8ad88658)
+[92mINFO [0m:      Received successfully
+[92mINFO [0m:      Start `flwr-clientapp` process
+[92mINFO [0m:      
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND review_status-be93de4e]
+[92mINFO [0m:      Sending: query message (ID: 88aa75603acfe640bc2dabb1040ae2701324453d2c842834ff76a0019357bf52)
+[92mINFO [0m:      Sent successfully
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND plan_approval-1ed78b85]
+[92mINFO [0m:      Receiving: query message (ID: f2cb357ab786ce3c77b5176b7dc3f81835c55c61ec4360f029b924b4adfacd16)
+[92mINFO [0m:      Received successfully
+[92mINFO [0m:      Start `flwr-clientapp` process
+[92mINFO [0m:      
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND plan_approval-1ed78b85]
+[92mINFO [0m:      Sending: query message (ID: 5c3c9a719db1e85780be5f3d0d14fe6fb5dead1120f28b4251289d094f2191c9)
+[92mINFO [0m:      Sent successfully
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND review_status-66cb690e]
+[92mINFO [0m:      Receiving: query message (ID: d748e46410fe25916ac869e3b2c006ad22285eb039c16b7b81fb7cb06619d8cf)
+[92mINFO [0m:      Received successfully
+[92mINFO [0m:      Start `flwr-clientapp` process
+[92mINFO [0m:      
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND review_status-66cb690e]
+[92mINFO [0m:      Sending: query message (ID: 9bb0e1d14fe968ae595c64bf2b166b22ddf45bd6788e5f184c9e755d46a41cf4)
+[92mINFO [0m:      Sent successfully
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND plan_approval-29d12b3c]
+[92mINFO [0m:      Receiving: query message (ID: a5bd1dbb5c54e66fe56750490b762811084f130cce6d7b97f6cae73cba9395e7)
+[92mINFO [0m:      Received successfully
+[92mINFO [0m:      Start `flwr-clientapp` process
+[92mINFO [0m:      
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND plan_approval-29d12b3c]
+[92mINFO [0m:      Sending: query message (ID: 7a55799630254e0d2cb0f293964896175dcc856c2beeb38545ba8d88c05c1645)
+[92mINFO [0m:      Sent successfully
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND review_status-0c38caf0]
+[92mINFO [0m:      Receiving: query message (ID: 30e2cc70f65f073fc5d07b712d97c7c6d25cca89612d412ed86cd9c41ab74004)
+[92mINFO [0m:      Received successfully

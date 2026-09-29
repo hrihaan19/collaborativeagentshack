@@ -1,0 +1,182 @@
+{
+  "label": "VERIFIED (SINGLE-HOST ONLY, this container, 2026-09-29)",
+  "flwr_version": "1.39.0",
+  "flower_run_id": "17437612076986627444",
+  "node_ids": [
+    177454847794493307,
+    10112905917919172903,
+    17707147246835290796
+  ],
+  "hospital_to_node": {
+    "A": 177454847794493307,
+    "B": 10112905917919172903,
+    "C": 17707147246835290796
+  },
+  "edges": [
+    [
+      "P1",
+      "P2"
+    ],
+    [
+      "P1",
+      "W4"
+    ],
+    [
+      "P2",
+      "P3"
+    ],
+    [
+      "P3",
+      "P1"
+    ]
+  ],
+  "plan": {
+    "kind": "CYCLE",
+    "order": [
+      "P1",
+      "P2",
+      "P3"
+    ],
+    "hash": "27820c4fdea2297924279531f55bf4ef2d8bfe0ea96ec5719fd02c25613805ba",
+    "state": "AWAITING_APPROVALS",
+    "acks": {
+      "A": "PLAN_ACK",
+      "B": "PLAN_ACK",
+      "C": "PLAN_ACK"
+    }
+  },
+  "screen_round_sample": [
+    {
+      "direction": "coordinator->hospital",
+      "message_type": "SCREEN_REQUEST",
+      "round_id": "screen_request-66c9fef7",
+      "flower_run_id": 17437612076986627444,
+      "flower_message_id": "",
+      "src_node_id": 1,
+      "dst_node_id": 177454847794493307,
+      "hospital_id": null,
+      "status": null
+    },
+    {
+      "direction": "coordinator->hospital",
+      "message_type": "SCREEN_REQUEST",
+      "round_id": "screen_request-66c9fef7",
+      "flower_run_id": 17437612076986627444,
+      "flower_message_id": "",
+      "src_node_id": 1,
+      "dst_node_id": 10112905917919172903,
+      "hospital_id": null,
+      "status": null
+    },
+    {
+      "direction": "coordinator->hospital",
+      "message_type": "SCREEN_REQUEST",
+      "round_id": "screen_request-66c9fef7",
+      "flower_run_id": 17437612076986627444,
+      "flower_message_id": "",
+      "src_node_id": 1,
+      "dst_node_id": 17707147246835290796,
+      "hospital_id": null,
+      "status": null
+    },
+    {
+      "direction": "hospital->coordinator",
+      "message_type": "SCREEN_REQUEST",
+      "round_id": "screen_request-66c9fef7",
+      "flower_run_id": 17437612076986627444,
+      "flower_message_id": "c975b5b56eedfd0fa4435be7ae22321c9b02ba34a6daacf8ee1eaa228015875c",
+      "src_node_id": 17707147246835290796,
+      "dst_node_id": 1,
+      "hospital_id": "C",
+      "status": "OK"
+    },
+    {
+      "direction": "hospital->coordinator",
+      "message_type": "SCREEN_REQUEST",
+      "round_id": "screen_request-66c9fef7",
+      "flower_run_id": 17437612076986627444,
+      "flower_message_id": "599b31b63d0101652dd1c8985df40a370af157c45b8c5c30993597f9c45d330a",
+      "src_node_id": 177454847794493307,
+      "dst_node_id": 1,
+      "hospital_id": "A",
+      "status": "OK"
+    },
+    {
+      "direction": "hospital->coordinator",
+      "message_type": "SCREEN_REQUEST",
+      "round_id": "screen_request-66c9fef7",
+      "flower_run_id": 17437612076986627444,
+      "flower_message_id": "5700eafd6f9811eec572f66ea4555342e50ff539c0e31b98bd4f3cd6bab12aa9",
+      "src_node_id": 10112905917919172903,
+      "dst_node_id": 1,
+      "hospital_id": "B",
+      "status": "OK"
+    },
+    {
+      "direction": "coordinator->hospital",
+      "message_type": "SCREEN_REQUEST",
+      "round_id": "screen_request-6dae9b48",
+      "flower_run_id": 17437612076986627444,
+      "flower_message_id": "",
+      "src_node_id": 1,
+      "dst_node_id": 177454847794493307,
+      "hospital_id": null,
+      "status": null
+    },
+    {
+      "direction": "coordinator->hospital",
+      "message_type": "SCREEN_REQUEST",
+      "round_id": "screen_request-6dae9b48",
+      "flower_run_id": 17437612076986627444,
+      "flower_message_id": "",
+      "src_node_id": 1,
+      "dst_node_id": 10112905917919172903,
+      "hospital_id": null,
+      "status": null
+    },
+    {
+      "direction": "coordinator->hospital",
+      "message_type": "SCREEN_REQUEST",
+      "round_id": "screen_request-6dae9b48",
+      "flower_run_id": 17437612076986627444,
+      "flower_message_id": "",
+      "src_node_id": 1,
+      "dst_node_id": 17707147246835290796,
+      "hospital_id": null,
+      "status": null
+    },
+    {
+      "direction": "hospital->coordinator",
+      "message_type": "SCREEN_REQUEST",
+      "round_id": "screen_request-6dae9b48",
+      "flower_run_id": 17437612076986627444,
+      "flower_message_id": "20eb3f0dc7d907d8b856c83221797156b976b9986c17528223bc4a42bb78d23c",
+      "src_node_id": 177454847794493307,
+      "dst_node_id": 1,
+      "hospital_id": "A",
+      "status": "OK"
+    },
+    {
+      "direction": "hospital->coordinator",
+      "message_type": "SCREEN_REQUEST",
+      "round_id": "screen_request-6dae9b48",
+      "flower_run_id": 17437612076986627444,
+      "flower_message_id": "6b88889ac36970974d3cf6a3810821c76d48b9c5e6a0657032117cafa23396ba",
+      "src_node_id": 10112905917919172903,
+      "dst_node_id": 1,
+      "hospital_id": "B",
+      "status": "OK"
+    },
+    {
+      "direction": "hospital->coordinator",
+      "message_type": "SCREEN_REQUEST",
+      "round_id": "screen_request-6dae9b48",
+      "flower_run_id": 17437612076986627444,
+      "flower_message_id": "1a814634dcc4995e156842b6eaa6e17af3a0a2ba01b753c1eeb8aab833b61f9e",
+      "src_node_id": 17707147246835290796,
+      "dst_node_id": 1,
+      "hospital_id": "C",
+      "status": "OK"
+    }
+  ]
+}

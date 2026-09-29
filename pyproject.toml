@@ -7,7 +7,7 @@ name = "domino"
 version = "0.1.0"
 description = "Domino - SYNTHETIC DEMO of cross-border kidney-exchange discovery over Flower. NOT A CLINICAL MATCHING TOOL."
 license = "Apache-2.0"
-requires-python = ">=3.10"
+requires-python = ">=3.11,<4.0"
 dependencies = [
     "flwr==1.39.0",
     "pydantic>=2.6,<3",
@@ -43,13 +43,3 @@ poll-seconds = 5
 round-timeout = 60
 # Number of SuperNodes expected (3 hospitals)
 num-hospitals = 3
-
-# Legacy [tool.flwr.federations] kept for flwr versions that still read it;
-# flwr 1.39 reads connection targets from $FLWR_HOME/config.toml ([superlink.<name>]),
-# which the start scripts write.
-[tool.flwr.federations]
-default = "domino"
-
-[tool.flwr.federations.domino]
-address = "127.0.0.1:9093"
-insecure = true

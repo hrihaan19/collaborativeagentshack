@@ -1,0 +1,97 @@
+[92mINFO [0m:      Starting Flower SuperNode
+[93mWARNING [0m:   Option `--insecure` was set. Starting insecure channel to 127.0.0.1:9092.
+INFO:     Started server process [1829]
+INFO:     Waiting for application startup.
+[92mINFO [0m:      FastAPI lifespan: startup
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9094 (Press CTRL+C to quit)
+[92mINFO [0m:      SuperNode ID: 177454847794493307
+[92mINFO [0m:      Starting Flower SuperExec
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.11 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 1.25 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 2.63 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 1.67 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 5.05 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 12.47 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.12 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 2.03 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.64 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 5.94 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 1.33 seconds
+[92mINFO [0m:      Connection successful after 31.94 seconds and 9 tries.
+[92mINFO [0m:      Connection successful after 14.76 seconds and 4 tries.
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.02 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.21 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.51 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 5.44 seconds
+[92mINFO [0m:      Connection successful after 6.19 seconds and 5 tries.
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND screen_request-66c9fef7]
+[92mINFO [0m:      Receiving: query message (ID: 208b8894e64acb69a0e76060f59dfd23bc4352e2aaa830334ca8a51f70c09f27)
+[92mINFO [0m:      Received successfully
+[92mINFO [0m:      Start `flwr-clientapp` process
+[92mINFO [0m:      
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND screen_request-66c9fef7]
+[92mINFO [0m:      Sending: query message (ID: 599b31b63d0101652dd1c8985df40a370af157c45b8c5c30993597f9c45d330a)
+[92mINFO [0m:      Sent successfully
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND screen_request-6dae9b48]
+[92mINFO [0m:      Receiving: query message (ID: 1fa09ed7d08380ebf2fa75482d42850b22361b2dd48427104377b0432834e757)
+[92mINFO [0m:      Received successfully
+[92mINFO [0m:      Start `flwr-clientapp` process
+[92mINFO [0m:      
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND screen_request-6dae9b48]
+[92mINFO [0m:      Sending: query message (ID: 20eb3f0dc7d907d8b856c83221797156b976b9986c17528223bc4a42bb78d23c)
+[92mINFO [0m:      Sent successfully
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND plan_prepare-fdc82805]
+[92mINFO [0m:      Receiving: query message (ID: 4dcec749750326fabb66c21fd02a338b9363b11352f9f96a554b7d68d0509dd5)
+[92mINFO [0m:      Received successfully
+[92mINFO [0m:      Start `flwr-clientapp` process
+[92mINFO [0m:      
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND plan_prepare-fdc82805]
+[92mINFO [0m:      Sending: query message (ID: 3d3abf1b80786f550fbaa9973a322939a0c7ebdddd0bcc9a0c3bba4d9b6d1906)
+[92mINFO [0m:      Sent successfully
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND review_status-be93de4e]
+[92mINFO [0m:      Receiving: query message (ID: 00e98c2ea8e40f0ef92590b2dcd435d8cc8f2ce41f9a2a89fec188e082c0c80b)
+[92mINFO [0m:      Received successfully
+[92mINFO [0m:      Start `flwr-clientapp` process
+[92mINFO [0m:      
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND review_status-be93de4e]
+[92mINFO [0m:      Sending: query message (ID: 1dab773174a33041522a703e0f95786f2d62c5bee6ba110a332b75383692771e)
+[92mINFO [0m:      Sent successfully
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND plan_approval-1ed78b85]
+[92mINFO [0m:      Receiving: query message (ID: 21c8dfaacc91770be61c173c0172df450ffffe06b3dcc5a6348e97fd0abc49ce)
+[92mINFO [0m:      Received successfully
+[92mINFO [0m:      Start `flwr-clientapp` process
+[92mINFO [0m:      
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND plan_approval-1ed78b85]
+[92mINFO [0m:      Sending: query message (ID: e6f3a246cdfebddcc93a7f02306725c4adc4c3bfaa57cc615f8113714d2dcf56)
+[92mINFO [0m:      Sent successfully
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND review_status-66cb690e]
+[92mINFO [0m:      Receiving: query message (ID: a41729083f65352fac177e22c4913a6edba9c94fbd6766af4798865f7b675488)
+[92mINFO [0m:      Received successfully
+[92mINFO [0m:      Start `flwr-clientapp` process
+[92mINFO [0m:      
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND review_status-66cb690e]
+[92mINFO [0m:      Sending: query message (ID: 06af2081f5513451fbb07eb8ed53fb5718966d79dd98c026bba6055acf4b07bc)
+[92mINFO [0m:      Sent successfully
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND plan_approval-29d12b3c]
+[92mINFO [0m:      Receiving: query message (ID: 80fdb48650c58d33f47a4486853f38193c25a383ca1c030873cee2512babca8e)
+[92mINFO [0m:      Received successfully
+[92mINFO [0m:      Start `flwr-clientapp` process
+[92mINFO [0m:      
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17437612076986627444, ROUND plan_approval-29d12b3c]
+[92mINFO [0m:      Sending: query message (ID: 539aa953f3d77b1bf5b27ce60986240baaef8cb20c7479c3343adb873376cc29)
+[92mINFO [0m:      Sent successfully
