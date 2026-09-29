@@ -1,21 +1,24 @@
-# Domino — 3-minute table demo
+# Domino — the 3–5 minute demo (17:15)
 
-**Say first:** "Everything on screen is synthetic. This is not a clinical matching tool."
+Projector on Mac 4: `scripts/start-projector.sh` → open **http://localhost:7800/projector**, press **F** for fullscreen. Mac 3 (Riverbend) opens **/console/riverbend**, Macs 1–2 open **/console/alder** and **/console/harbor** (same server, LAN URL). A tablet shows **/give** via the QR on screen. Everything below is one press of **→** per beat.
 
-Setup before judges arrive: federation up (`start-coordinator.sh` on Nebius, `start-hospital-{a,b,c}.sh` on M1/M2/M3, or `dev-single-host.sh` as fallback), `reset-demo.sh` run, dashboard open on the big screen, Hospital B console open on M2, Hospital C console on M3, a box of dominoes lined up P1→P2→P3 in a loop and N0→P3→P1→W4 in a line, QR page ready on a tablet.
+**Say first:** "All patients, hospitals and medicine here are synthetic."
 
-| t | Beat | Click | What to say |
+| Beat | Press | What happens | Say |
 |---|---|---|---|
-| 0:00 | The problem | — | "Three hospitals, three countries, no shared registry. They can't pool records. The 2021 Israel–Abu Dhabi exchange had no shared registry either." |
-| 0:20 | Local search | point at consoles | "Each hospital searches alone: zero exchanges. Names never leave the machine." |
-| 0:35 | Screen via Flower | dashboard **SCREEN & SOLVE** | "The coordinator on Nebius can't call a hospital. It sends a Flower message; the hospital's SuperNode pulls it, screens locally, and only tokens and results come back." Show the audit filling with run id / node ids. |
-| 0:55 | The cycle | **REVEAL PLAN**, tip the three dominoes | "Three hospitals, one three-way cycle. A plan hash is now on every hospital's screen." |
-| 1:15 | The human gate | B console: add a note to P2 → **HOLD** | "A new note at Tel Aviv flags review by rule — a local model can suggest it, it can't decide. The clinician holds. Nobody can override that." Dashboard: REVIEW_PENDING → INVALIDATED → NO_FEASIBLE_EXCHANGE. Knock the P2 domino out of the loop. |
-| 1:50 | New donor | tablet QR (or presenter button **ADD A FICTIONAL DONOR**) | "A fictional non-directed donor appears in Abu Dhabi. Fresh screening through Flower…" |
-| 2:10 | The chain | **REVEAL PLAN**, tip N0→P3→P1→W4 | "A chain: three recipients, three countries, P2 still held." |
-| 2:30 | Approvals | APPROVE on A, B, C consoles | "Each hospital signs the exact plan hash. Three verified signatures; the coordinator re-queries everyone once more." Dashboard: APPROVED_FOR_SIMULATED_COORDINATION. |
-| 2:50 | Close | — | "Nothing was diagnosed, nobody was enrolled, nothing is scheduled. The point is the shape: local data, Flower messages, human gates." |
+| 0 Title | — | Dark Northern California, three dim hospitals, "You are here" at Stanford. | "Three hospitals. Twelve families. No shared database." |
+| 1 Meet them | → | Maria+Elena, James+Priya, Grace+Sam with blood chips and why they don't match. | "Every donor here would give a kidney to someone they love. None of them match." |
+| 2 Alone | → | Each locked panel scans its own list: 0, 0, 0. | "Each hospital, alone: zero." |
+| 3 The agents talk | → | Flower SuperGrid hub, packets out (compat · pair · donor B · 6 antigens) and back (H1 · compatible · high; R1 · not this week · infection). "reading 4 charts · 13 rulebook sections". Each hospital refuses the canary (patient names). Wire strip prints field names and bytes. | "Only yes or no crosses. Names, charts and rules stay home." |
+| 3b Why agents | → | Keyword rules: measured score with the traps struck through; agent score from `docs/evidence/readiness-eval.json` (shows — until measured). | "Every hospital writes its own rules. Our agents read them where they live." |
+| 4 The loop | → | Three arcs draw with couriers; counter 0→3; plan panel with the explanation and "Checked by code and by a second model ✓". | "Together: three transplants." |
+| 5 The human | → | Riverbend console shows Grace's approval card with the rule (§1.1) and the chart line. **Surgeon on Mac 3 clicks "Ask others to hold until Oct 9".** Hold packets go out; Alder accepts, Harbor Point declines (donor availability); NO CONSENSUS; the plan re-forms as the swap, counter 3→2, "Grace keeps her place". (If nobody clicks: **S**.) | "A surgeon asked everyone to wait. One hospital couldn't, for a reason only it knows. The plan re-formed in seconds." |
+| 6 The domino | → | QR appears. **A judge opens /give and presses the button** (fallback: **G**). Kidney at Stanford; "7 patients could receive this kidney. Only Kenji's chain keeps going"; five legs fall with couriers, counter ticks 2→7; Malik lights up as bridge donor. | "One stranger. Five more transplants. Three hospitals that never saw each other's files." |
+| 7 The schedule | → | Agents chat: each hospital's constraint with its rulebook section; coordinator: "Mark's kidney leaves San Jose at 10:00 and reaches Sacramento at 12:00, inside Riverbend's cutoff." Friday timeline with the tightest leg in yellow. | "They shared 'works' and 'doesn't'. Not one calendar, not one chart." |
+| 8 Close | → | Counter at 7, all arcs lit, audit line. | "No shared database. A person at every step. Seven people go home." |
 
-If Nebius is unreachable: coordinator on M1 (`COORDINATOR_HOST` in `.env`), say so. If cross-machine networking fails: `dev-single-host.sh`, and say "SINGLE-HOST ONLY" out loud.
+**Keys:** → / Space next · ← back · R reset · S finish beat from script · G fire the chain · B Harbor Point offline/back · F fullscreen · 1/2/3 open consoles · M scripted ↔ live · H help.
 
-Recovery: `scripts/reset-demo.sh` on every machine (hospitals re-seed locally; coordinator clears its plan). If the ServerApp heartbeat pill turns red on the dashboard, re-run `flwr run . domino -c 'state-dir="…"'` on the coordinator.
+**Modes (badge always tells the truth):** REHEARSAL = scripted, no network. LIVE = press M; on beats 3, 5, 6, 7 the projector runs `flwr run . supergrid --run-config phase=…` and draws only real `DOMINO_EVENT` lines; after 25 s of silence it finishes the beat from the script and the badge drops back to REHEARSAL. Replay mode is not built.
+
+**If things go wrong:** R resets everything (consoles too). If a hold click was missed, S plays the negotiation from the script. If the room's Wi-Fi dies, stay in REHEARSAL — the story is identical.

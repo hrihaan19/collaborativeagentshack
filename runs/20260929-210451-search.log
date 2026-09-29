@@ -1,0 +1,23 @@
+[fake-flwr] TEST DOUBLE, not a Flower run. phase=search
+Successfully started run 000000000000000000 (DOUBLE)
+DOMINO_EVENT {"type":"node.status","hospital":"alder","status":"online"}
+DOMINO_EVENT {"type":"node.status","hospital":"harbor","status":"online"}
+DOMINO_EVENT {"type":"node.status","hospital":"riverbend","status":"online"}
+DOMINO_EVENT {"type":"run.start","run_id":"test","phase":"search","mode":"live","nodes":[{"hospital":"alder","node_id":"node-alder"},{"hospital":"harbor","node_id":"node-harbor"},{"hospital":"riverbend","node_id":"node-riverbend"}]}
+DOMINO_EVENT {"type":"ask","id":"q1","to":"alder","kind":"compat","fields":["donors","kind"],"bytes":1004}
+DOMINO_EVENT {"type":"ask","id":"q2","to":"harbor","kind":"compat","fields":["donors","kind"],"bytes":1004}
+DOMINO_EVENT {"type":"ask","id":"q3","to":"riverbend","kind":"compat","fields":["donors","kind"],"bytes":1004}
+DOMINO_EVENT {"type":"reply","ask_id":"q1","from":"alder","kind":"compat","payload":{"kind":"compat","hospital":"alder","compatible":[{"pair":"A1","donor_pair":"H1","compatible":true,"strength":"high"},{"pair":"A2","donor_pair":"H2","compatible":true,"strength":"high"},{"pair":"A1","donor_pair":"R1","compatible":true,"strength":"medium"}],"readiness":[{"pair":"A1","readiness":"ready","reason":"none"},{"pair":"A2","readiness":"ready","reason":"none"},{"pair":"A3","readiness":"ready","reason":"none"},{"pair":"A4","readiness":"ready","reason":"none"}]},"bytes":471}
+DOMINO_EVENT {"type":"reply","ask_id":"q2","from":"harbor","kind":"compat","payload":{"kind":"compat","hospital":"harbor","compatible":[{"pair":"H1","donor_pair":"A1","compatible":true,"strength":"high"},{"pair":"H3","donor_pair":"R2","compatible":true,"strength":"high"}],"readiness":[{"pair":"H1","readiness":"ready","reason":"none"},{"pair":"H2","readiness":"ready","reason":"none"},{"pair":"H3","readiness":"ready","reason":"none"},{"pair":"H4","readiness":"needs_review","reason":"cardiac_clearance"}]},"bytes":422}
+DOMINO_EVENT {"type":"reply","ask_id":"q3","from":"riverbend","kind":"compat","payload":{"kind":"compat","hospital":"riverbend","compatible":[{"pair":"R2","donor_pair":"A2","compatible":true,"strength":"high"},{"pair":"R1","donor_pair":"H1","compatible":true,"strength":"high"},{"pair":"R3","donor_pair":"H3","compatible":true,"strength":"high"}],"readiness":[{"pair":"R1","readiness":"not_this_week","reason":"admission"},{"pair":"R2","readiness":"ready","reason":"none"},{"pair":"R3","readiness":"ready","reason":"none"},{"pair":"R4","readiness":"not_this_week","reason":"travel"}]},"bytes":496}
+DOMINO_EVENT {"type":"ask","id":"q7","to":"alder","kind":"canary","fields":["kind","question"],"bytes":44}
+DOMINO_EVENT {"type":"ask","id":"q8","to":"harbor","kind":"canary","fields":["kind","question"],"bytes":44}
+DOMINO_EVENT {"type":"ask","id":"q9","to":"riverbend","kind":"canary","fields":["kind","question"],"bytes":44}
+DOMINO_EVENT {"type":"refusal","from":"alder","question":"patient_names"}
+DOMINO_EVENT {"type":"refusal","from":"harbor","question":"patient_names"}
+DOMINO_EVENT {"type":"refusal","from":"riverbend","question":"patient_names"}
+DOMINO_EVENT {"type":"thought","who":"coordinator","text":"explanation by template (no model)"}
+DOMINO_EVENT {"type":"plan","phase":"cycles","transplants":2,"legs":[{"donor_pair":"A1","donor_hospital":"alder","patient_pair":"H1","patient_hospital":"harbor"},{"donor_pair":"H1","donor_hospital":"harbor","patient_pair":"A1","patient_hospital":"alder"}],"explanation":"2 transplants across 2 hospitals: A1 gives to H1; H1 gives to A1."}
+DOMINO_EVENT {"type":"audit","ok":true,"models":["flower-endeavor-v1.0"],"checks":["claims","legs","wire"],"unsupported":[]}
+DOMINO_EVENT {"type":"counter","value":2}
+DOMINO_EVENT {"type":"phase.end","phase":"search","ok":true}

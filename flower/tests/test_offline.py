@@ -142,14 +142,10 @@ def test_all_four_phases_end_to_end(emitted):
     agent = FakeAgent(decisions={("riverbend", "R1"): {"decision": "hold", "hold_until": "2026-10-09", "reason": "infection"}})
     st = _run(agent, "search", {})
     assert set(map(tuple, st["edges"])) == {("A1", "H1"), ("H1", "A1"), ("H1", "R1"), ("R1", "A1"), ("H2", "A2"), ("A2", "R2"), ("R2", "H3"), ("H3", "R3")}
-    assert [l["patient_pair"] for l in st["plan"]["legs"]] in (["H1", "A1"], ["A1", "H1"])  # R1 not ready by rules -> swap
+    assert st["plan"]["transplants"] == 3 and sorted(l["patient_pair"] for l in st["plan"]["legs"]) == ["A1", "H1", "R1"]  # the loop; Grace's readiness is advice
+    assert st["readiness"]["R1"]["readiness"] == "not_this_week"
     assert any(e["type"] == "refusal" and e["question"] == "patient_names" for e in emitted)
     assert [e for e in emitted if e["type"] == "phase.end"][-1]["phase"] == "search"
-    # a loop needs R1 ready: force it and re-solve to check the 3-cycle path
-    st["readiness"]["R1"] = {"pair": "R1", "readiness": "ready", "reason": "none"}
-    pairs = st["pairs"]
-    assert matching.best_cycles(sorted(pairs), pairs, [tuple(e) for e in st["edges"]], set()) == [["A1", "H1", "R1"]]
-    st["plan"] = {"phase": "cycles", "legs": [{"donor_pair": u, "donor_hospital": pairs[u], "patient_pair": v, "patient_hospital": pairs[v]} for u, v in (("A1", "H1"), ("H1", "R1"), ("R1", "A1"))], "transplants": 3}
     st = _run(agent, "approve", st)
     kinds = [e["type"] for e in emitted]
     assert "hold.request" in kinds and "hold.result" in kinds

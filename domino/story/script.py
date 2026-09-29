@@ -105,10 +105,9 @@ class Script:
             t += 700
         beats.append({"id": 3, "title": "The agents talk", "caption": "Only yes or no crosses. Names, charts and rules stay home.", "events": ev})
         # 3b why agents
+        kw_ok, kw_n, traps = D.keyword_eval()
         beats.append({"id": 4, "title": "Why agents?", "caption": "Every hospital writes its own rules. Our agents read them where they live.",
-                      "events": [{"t": 0, "ev": {"type": "ui", "show": "scoreboard", "keyword": list(D.KEYWORD_SCORE), "traps": [
-                          {"pair": "A1", "text": "“No infections” → flagged"}, {"pair": "A2", "text": "a UTI resolved in June → flagged"},
-                          {"pair": "R3", "text": "a dental abscess resolved in August → flagged"}]}}]})
+                      "events": [{"t": 0, "ev": {"type": "ui", "show": "scoreboard", "keyword": [kw_ok, kw_n], "traps": traps}}]})
         # 4 the loop
         loop = M.best_cycles(P, E)
         legs = [l for c in loop for l in self._legs(c, True)]

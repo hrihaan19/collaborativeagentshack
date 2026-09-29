@@ -1,11 +1,11 @@
-INFO:     Started server process [905]
+INFO:     Started server process [1630]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:7800 (Press CTRL+C to quit)
-INFO:     127.0.0.1:53034 - "GET /projector HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53038 - "GET /projector HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53038 - "GET /api/map HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53040 - "GET /favicon.ico HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:54524 - "GET /projector HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "GET /projector HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "GET /api/map HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40942 - "GET /favicon.ico HTTP/1.1" 204 No Content
 ERROR:    Exception in ASGI application
 Traceback (most recent call last):
   File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 421, in run_asgi
@@ -57,39 +57,29 @@ Traceback (most recent call last):
   File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 543, in send
     raise RuntimeError("Response content longer than Content-Length")
 RuntimeError: Response content longer than Content-Length
-INFO:     127.0.0.1:53038 - "GET /api/story HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53038 - "POST /api/beat?beat=0 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53038 - "POST /api/reset HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53038 - "POST /api/beat?beat=0 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53038 - "POST /api/beat?beat=1 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53038 - "POST /api/beat?beat=2 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53038 - "POST /api/beat?beat=3 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56674 - "POST /api/beat?beat=4 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56674 - "GET /api/eval HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:56674 - "POST /api/beat?beat=5 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56688 - "GET /api/eval HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:56688 - "POST /api/beat?beat=6 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56674 - "GET /api/eval HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:56688 - "GET /api/state HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56688 - "GET /api/state HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57524 - "POST /api/decision HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56688 - "GET /api/state HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58192 - "POST /api/beat?beat=7 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58196 - "GET /api/eval HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:58196 - "GET /api/state HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58192 - "GET /api/qr HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58212 - "POST /api/give HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58192 - "GET /api/state HTTP/1.1" 200 OK
-INFO:     127.0.0.1:36990 - "POST /api/beat?beat=8 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:37002 - "GET /api/eval HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:37002 - "GET /api/qr HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55566 - "POST /events HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:55578 - "POST /events HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:48930 - "POST /events HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:48942 - "POST /events HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:49914 - "POST /events HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:49930 - "POST /events HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:55518 - "POST /events HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:55532 - "POST /events HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:46042 - "POST /events HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:46046 - "POST /events HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:40930 - "GET /api/story HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "POST /api/beat?beat=0&mode=scripted HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "POST /api/beat?beat=1&mode=live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "POST /api/beat?beat=2&mode=live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "POST /api/beat?beat=3&mode=live HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "POST /api/live/search HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "GET /api/live/events?since=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "GET /api/live/events?since=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "GET /api/live/events?since=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "GET /api/live/events?since=1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "GET /api/live/events?since=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "GET /api/live/events?since=4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "GET /api/live/events?since=6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "GET /api/live/events?since=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "GET /api/live/events?since=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "GET /api/live/events?since=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "GET /api/live/events?since=11 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "GET /api/live/events?since=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "GET /api/live/events?since=14 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "GET /api/live/events?since=16 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "GET /api/live/events?since=17 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "GET /api/live/events?since=19 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40930 - "GET /api/live/events?since=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36864 - "GET /api/live/events?since=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33822 - "POST /events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33828 - "POST /events HTTP/1.1" 200 OK

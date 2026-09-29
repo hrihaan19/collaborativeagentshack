@@ -22,7 +22,74 @@ STATIC = Path(__file__).parent / "static"
 DATA = Path(os.environ.get("DOMINO_DATA_DIR", "data"))
 app = FastAPI(title="Domino projector - synthetic data, fictional hospitals")
 
-STATE: dict = {"decisions": {}, "give": None, "hold_replies": {}, "beat": 0, "mode": "scripted", "seq": 0}
+STATE: dict = {"decisions": {}, "give": None, "hold_replies": {}, "beat": 0, "mode": "scripted", "seq": 0, "local_events": []}
+
+# ---------------------------------------------------------------- live bridge
+import re
+import subprocess
+import threading
+
+FLOWER_DIR = Path(os.environ.get("DOMINO_FLOWER_DIR", str(Path(__file__).resolve().parents[2] / "flower")))
+SUPERLINK = os.environ.get("DOMINO_SUPERLINK", "supergrid")
+LIVE: dict = {"proc": None, "events": [], "phase": None, "run_id": None, "started_at": None, "last_event_at": None, "tail": [], "log": None}
+RUNS = Path(os.environ.get("DOMINO_RUNS_DIR", "runs"))
+
+
+def _reader(proc, logf):
+    for raw in proc.stdout:
+        line = raw.decode("utf-8", "ignore").rstrip()
+        logf.write(line + "\n"); logf.flush()
+        LIVE["tail"] = (LIVE["tail"] + [line])[-30:]
+        m = re.search(r"run[ _]?(?:ID)?[ =:]*(\d{6,})", line, re.I)
+        if m and not LIVE["run_id"]:
+            LIVE["run_id"] = m.group(1)
+        if "DOMINO_EVENT " in line:
+            try:
+                ev = json.loads(line.split("DOMINO_EVENT ", 1)[1])
+            except ValueError:
+                continue
+            if ev.get("type") == "run.start" and LIVE["run_id"]:
+                ev["run_id"] = LIVE["run_id"]
+            LIVE["events"].append(ev)
+            LIVE["last_event_at"] = time.time()
+    LIVE["tail"].append(f"[flwr run exited {proc.wait()}]")
+
+
+@app.post("/api/live/{phase}")
+def live_start(phase: str) -> JSONResponse:
+    """Spawn one `flwr run` for a phase inside flower/. Real Grid messages only."""
+    if phase not in ("search", "approve", "chain", "schedule"):
+        raise HTTPException(400, "phase")
+    if LIVE["proc"] is not None and LIVE["proc"].poll() is None:
+        return JSONResponse({"already": True, "phase": LIVE["phase"], "run_id": LIVE["run_id"]})
+    donors = (FLOWER_DIR / "data" / "public-donors.json")
+    if not donors.exists():
+        subprocess.run([os.environ.get("PYTHON", "python3"), str(FLOWER_DIR / "scripts" / "split-data.py")], check=False)
+    dn = json.dumps(json.loads(donors.read_text()), separators=(",", ":")) if donors.exists() else "[]"
+    alt = json.dumps({"pair": "ALT", **{k: v for k, v in json.loads((DATA / "domino-data.json").read_text())["altruist"].items() if k != "name"}}, separators=(",", ":")).replace('"blood"', '"donor_blood"').replace('"hla"', '"donor_hla"')
+    cfg = f"phase=\"{phase}\" donors='{dn}' altruist='{alt}' console_port={int(os.environ.get('PROJECTOR_PORT', '7800'))}"
+    cmd = [os.environ.get("FLWR_BIN", "flwr"), "run", ".", SUPERLINK, "--run-config", cfg, "--stream"]
+    RUNS.mkdir(exist_ok=True)
+    logf = open(RUNS / f"{time.strftime('%Y%m%d-%H%M%S')}-{phase}.log", "a", encoding="utf-8")
+    LIVE.update({"events": [] if phase == "search" else LIVE["events"], "phase": phase, "run_id": None, "started_at": time.time(), "last_event_at": None, "tail": []})
+    LIVE["proc"] = subprocess.Popen(cmd, cwd=str(FLOWER_DIR), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    threading.Thread(target=_reader, args=(LIVE["proc"], logf), daemon=True).start()
+    return JSONResponse({"started": True, "phase": phase, "cmd": " ".join(cmd[:4]) + " …"})
+
+
+@app.get("/api/live/events")
+def live_events(since: int = 0) -> JSONResponse:
+    p = LIVE["proc"]
+    return JSONResponse({"events": LIVE["events"][since:], "next": len(LIVE["events"]), "phase": LIVE["phase"], "run_id": LIVE["run_id"],
+                         "alive": p is not None and p.poll() is None, "double": os.path.basename(os.environ.get("FLWR_BIN", "flwr")) != "flwr", "started_at": LIVE["started_at"], "last_event_at": LIVE["last_event_at"],
+                         "tail": LIVE["tail"][-8:]})
+
+
+@app.post("/events")
+async def hospital_local_event(ev: dict) -> JSONResponse:
+    """Hospital-only events from the agent on THIS Mac (evidence, thoughts, refusals, memory). Never via the Grid."""
+    STATE["local_events"] = (STATE["local_events"] + [{**ev, "at": time.time()}])[-200:]
+    return JSONResponse({"ok": True})
 
 
 class Decision(BaseModel):

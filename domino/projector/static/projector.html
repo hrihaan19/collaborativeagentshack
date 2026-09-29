@@ -76,7 +76,7 @@ const HNAME={alder:'Alder Medical Center',harbor:'Harbor Point Hospital',riverbe
 const CITY={alder:'San Jose',harbor:'Oakland',riverbend:'Sacramento'};
 const HUB={x:415,y:290};
 const SHORT={alder:'Alder',harbor:'Harbor Point',riverbend:'Riverbend'};
-let story=null, MAP=null, beat=-1, timers=[], names={}, POS={}, curPlanLegs=[], waiting=null, harborOff=false, reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let story=null, MAP=null, beat=-1, timers=[], names={}, POS={}, curPlanLegs=[], waiting=null, harborOff=false, MODE='scripted', live=null, reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const fitStage=()=>{const s=Math.min(innerWidth/1920,innerHeight/1080);const st=$('#stage');st.style.transform=`translate(${(innerWidth-1920*s)/2}px,${(innerHeight-1080*s)/2}px) scale(${s})`};
 addEventListener('resize',fitStage);fitStage();
 function svgEl(t,a={},txt){const e=document.createElementNS('http://www.w3.org/2000/svg',t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;return e}
@@ -176,10 +176,28 @@ function resetVisuals(){timers.forEach(clearTimeout);timers=[];waiting=null;['#a
  $('#counter').textContent='0';$('#planText').textContent='—';$('#planLegs').innerHTML='';$('#audit').textContent='';$('#coordThought').textContent='';$('#nego').style.display='none';$('#chat').style.display='none';$('#timeline').style.display='none';$('#score').style.display='none';$('#qr').style.display='none';
  $('#title').style.display='none';$('#families').style.display='none';kidneyAtStanford(false);drawHospitals();setBadge(null)}
 function playEvents(evs,offset){evs.forEach(e=>timers.push(setTimeout(()=>apply(e.ev,false),e.t+(offset||0))))}
-function render(i){resetVisuals();beat=Math.max(0,Math.min(story.beats.length-1,i));fetch('/api/beat?beat='+beat,{method:'POST'});
+const PHASE_OF={3:'search',6:'approve',7:'chain',8:'schedule'};
+function render(i){resetVisuals();beat=Math.max(0,Math.min(story.beats.length-1,i));fetch('/api/beat?beat='+beat+'&mode='+MODE,{method:'POST'});
  for(let k=0;k<beat;k++){const b=story.beats[k];b.events.forEach(e=>apply(e.ev,true));if(b.branches){const br=b.branches[b.wait==='give'?'give':'hold'];br.forEach(e=>apply(e.ev,true))}}
- const b=story.beats[beat];caption(b.caption);playEvents(b.events,0);
+ const b=story.beats[beat];caption(b.caption);
+ if(MODE==='live'&&PHASE_OF[beat]){return liveBeat(b,PHASE_OF[beat])}
+ playEvents(b.events,0);
  if(b.wait){const last=Math.max(0,...b.events.map(e=>e.t));waiting={beat:beat,kind:b.wait,at:performance.now()+last};pollWait()}}
+// ---- LIVE: one flwr run per phase; events are real Grid messages; 25 s of silence -> finish from script, badge REHEARSAL
+async function liveBeat(b,phase){
+ const uiOnly=b.events.filter(e=>['ui','alone'].includes(e.ev.type));playEvents(uiOnly,0);
+ if(b.wait==='give'){waiting={beat:beat,kind:'give'};const ok=await new Promise(res=>{const t=setInterval(async()=>{const s=await (await fetch('/api/state')).json();if(s.give||!waiting){clearInterval(t);res(!!s.give)}},800)});if(!ok)return}
+ waiting=null;const r=await fetch('/api/live/'+phase,{method:'POST'});if(!r.ok){caption('could not start flwr run · finishing from script');return fallback(b)}
+ live={phase,since:0,got:0,t0:performance.now()};$('#badge').textContent='LIVE · SuperGrid · starting run…';$('#badge').className='live';
+ const poll=async()=>{if(!live||live.phase!==phase)return;const j=await (await fetch('/api/live/events?since='+live.since)).json();live.since=j.next;
+  j.events.forEach(ev=>{if(ev.type==='run.start')ev.mode='live';if(ev.type==='plan')ev.legs.forEach(l=>{const d=names[l.donor_pair],p=names[l.patient_pair];l.donor=l.donor||(d?d.donor:l.donor_pair==='ALT'?'the stranger':l.donor_pair);l.patient=l.patient||(p?p.patient:l.patient_pair);if(l.donor_pair==='ALT')l.from_place='stanford'});if(ev.type==='schedule')ev.legs.forEach(l=>{const d=names[l.donor_pair],p=names[l.patient_pair];l.donor=d?d.donor:'the stranger';l.patient=p?p.patient:l.patient_pair});apply(ev,false);live.got++});
+  if(j.double){$('#badge').textContent='LIVE-DOUBLE · test double, NOT a SuperGrid run';$('#badge').className='replay'}else if(j.run_id)$('#badge').textContent=`LIVE · SuperGrid run ${j.run_id} · coordinator: Endeavor`;
+  const idle=(performance.now()-live.t0)/1000, sinceEv=j.last_event_at?(Date.now()/1000-j.last_event_at):idle;
+  if(j.events.some(e=>e.type==='phase.end')){live=null;return}
+  if((live.got===0&&idle>25)||(live.got>0&&sinceEv>25&&!j.alive)){caption(b.caption+'  · waiting for SuperGrid');live=null;return fallback(b)}
+  if(!j.alive&&live.got===0&&idle>8){live=null;return fallback(b)}
+  setTimeout(poll,500)};poll()}
+function fallback(b){setBadge(null);$('#badge').textContent='REHEARSAL · live run did not complete';playEvents(b.events.filter(e=>!['ui','alone'].includes(e.ev.type)),0);if(b.branches){const br=b.branches[b.wait==='give'?'give':'hold'];const last=Math.max(0,...b.events.map(e=>e.t));playEvents(br,last)}}
 function finishBranch(name){if(!waiting)return;const b=story.beats[waiting.beat];const br=b.branches[name]||b.branches[Object.keys(b.branches)[0]];waiting=null;playEvents(br,0)}
 async function pollWait(){if(!waiting)return;try{const s=await (await fetch('/api/state')).json();if(waiting.kind==='approval'&&s.decisions.R1){return finishBranch(s.decisions.R1.decision)}if(waiting.kind==='give'&&s.give){return finishBranch('give')}}catch(e){}setTimeout(pollWait,1000)}
 async function forceFinish(){if(!waiting)return;if(waiting.kind==='approval'){await fetch('/api/decision',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({hospital:'riverbend',pair:'R1',decision:'hold',hold_until:'2026-10-09',reason:'infection'})})}else{await fetch('/api/give',{method:'POST'})}}
@@ -190,6 +208,6 @@ addEventListener('keydown',e=>{const k=e.key;
  else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}
  else if(k==='h'||k==='H'){const h=$('#help');h.style.display=h.style.display==='block'?'none':'block'}
  else if(k==='1'||k==='2'||k==='3'){open('/console/'+['alder','harbor','riverbend'][parseInt(k)-1],'_blank')}
- else if(k==='m'||k==='M'){alert('Scripted mode only in this build. Live/replay modes: see README.')}});
+ else if(k==='m'||k==='M'){MODE=MODE==='scripted'?'live':'scripted';live=null;$('#badge').textContent=MODE==='live'?'LIVE · SuperGrid (press Next on a phase beat)':'REHEARSAL';$('#badge').className=MODE==='live'?'live':''}});
 boot();
 </script></body></html>

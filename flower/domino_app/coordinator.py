@@ -132,7 +132,9 @@ class Coord:
         pairs = {d["pair"]: d["hospital"] for d in self.donors}
         edges = sorted({(c["donor_pair"], c["pair"]) for r in replies.values() for c in r.get("compatible", []) if c.get("compatible")})
         readiness = {r["pair"]: r for rep in replies.values() for r in rep.get("readiness", [])}
-        excluded = {p for p, r in readiness.items() if r["readiness"] != "ready"} | set(filter(None, str(self.cfg.get("unavailable", "")).split(",")))
+        # Readiness is the agent's ADVICE for the surgeon (shown on the console); only a human
+        # decision (approve phase) or an explicit --run-config unavailable=… removes a pair.
+        excluded = set(filter(None, str(self.cfg.get("unavailable", "")).split(",")))
         cycles = matching.best_cycles(sorted(pairs), pairs, edges, excluded)
         legs = [{"donor_pair": u, "donor_hospital": pairs[u], "patient_pair": v, "patient_hospital": pairs[v]}
                 for c in cycles for u, v in zip(c, c[1:] + c[:1])]
@@ -152,7 +154,7 @@ class Coord:
         plan = self.st.get("plan", {"legs": []})
         pairs = self.st.get("pairs", {})
         edges = [tuple(e) for e in self.st.get("edges", [])]
-        excluded = {p for p, r in self.st.get("readiness", {}).items() if r["readiness"] != "ready"}
+        excluded = set(self.st.get("excluded", []))
         asks = {}
         for l in plan["legs"]:
             asks[l["patient_hospital"]] = {"kind": "approve", "pair": l["patient_pair"], "donor_hospital": l["donor_hospital"],
