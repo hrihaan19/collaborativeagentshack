@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Domino</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{--bg:#0B1020;--county:#10182B;--cstroke:#1E2A44;--fg:#E8EDF7;--mut:#8A97B5;--glow:#7FB3FF;--pkt:#9AD1FF;--lit:#3DDC97;--kid:#FF6B6B;--warn:#FFC857;
+ --O:#2F6FED;--A:#F2C94C;--B:#F28DB2;--AB:#F3F4F6}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;overflow:hidden}
+#stage{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;background:var(--bg)}
+#map{position:absolute;left:0;top:0;width:1340px;height:900px}
+#right{position:absolute;left:1350px;top:24px;width:546px;height:870px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+.card{background:#0E1527;border:1px solid #1B2540;border-radius:14px;padding:16px 18px}
+.card h3{margin:0 0 8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-weight:600}
+#counterCard{text-align:left}#counter{font-family:"Barlow Condensed","Arial Narrow","Helvetica Neue",system-ui;font-weight:700;font-size:170px;line-height:.9;font-variant-numeric:tabular-nums;letter-spacing:-.01em;transition:transform .25s}
+#counter.tick{transform:scale(1.06)}#counterLbl{font-size:18px;color:var(--mut);letter-spacing:.2em;text-transform:uppercase;margin-top:6px}
+#plan{min-height:150px;flex:0 0 auto}#planText{font-size:17px;line-height:1.35;min-height:52px}#planLegs{margin-top:8px;font-size:15px;color:#c7d2ea;line-height:1.5}
+#audit{margin-top:8px;font-size:14px;color:var(--lit)}#audit.bad{color:var(--warn)}#coordThought{font-size:13px;color:var(--mut);margin-top:6px;font-family:ui-monospace,Menlo,monospace}
+#nego{display:none}#nego .row{display:flex;justify-content:space-between;font-size:15px;padding:4px 0;border-bottom:1px dashed #1B2540}
+.stamp{display:inline-block;border:2px solid var(--warn);color:var(--warn);padding:2px 10px;border-radius:6px;font-weight:800;letter-spacing:.1em;font-size:14px;transform:rotate(-4deg)}
+#chat{display:none;flex:1 1 auto;min-height:0;overflow:hidden}#chat .line{font-size:14px;padding:5px 0;border-bottom:1px dashed #1B2540;line-height:1.35}#chat .who{color:var(--glow);font-weight:700}#chat .src{color:var(--mut);font-family:ui-monospace,Menlo,monospace;font-size:12px}
+#timeline{margin-top:6px;position:relative;height:150px;display:none}#timeline .h{position:absolute;top:0;font-size:11px;color:var(--mut);font-family:ui-monospace,Menlo,monospace}
+#timeline .bar{position:absolute;height:15px;border-radius:4px;background:#24406b;font-size:11px;line-height:16px;padding-left:6px;white-space:nowrap;overflow:visible;color:#dfe8ff}#timeline .bar.tight{background:var(--warn);color:#111;font-weight:700}
+#score{display:none}#score .r{display:flex;align-items:baseline;gap:14px;padding:10px 0;border-bottom:1px dashed #1B2540}#score .big{font-family:"Barlow Condensed","Arial Narrow",system-ui;font-size:64px;font-weight:700;line-height:1;min-width:130px}#score .traps div{font-size:14px;color:var(--mut);text-decoration:line-through}
+#bottom{position:absolute;left:0;top:900px;width:1920px;height:180px;border-top:1px solid #1B2540}
+#caption{position:absolute;left:40px;top:22px;width:1180px;font-family:"New York","Iowan Old Style",Georgia,serif;font-size:44px;line-height:1.2;color:var(--fg)}
+#wire{position:absolute;left:1260px;top:12px;width:640px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:#b7c4e0;line-height:1.4}#wire div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#wire .t{color:var(--mut);letter-spacing:.14em;font-size:11px;text-transform:uppercase}
+#footer{position:absolute;left:40px;bottom:12px;font-size:13px;color:var(--mut)}
+#badge{position:absolute;right:24px;bottom:12px;font-family:ui-monospace,Menlo,monospace;font-size:13px;color:#0B1020;background:var(--warn);padding:4px 12px;border-radius:999px;font-weight:700}
+#badge.live{background:var(--lit)}#badge.replay{background:var(--glow)}
+.overlay{position:absolute;left:0;top:0;width:1340px;height:900px;display:none;align-items:center;justify-content:center;flex-direction:column}
+#title h1{font-family:"New York",Georgia,serif;font-size:120px;margin:0;font-weight:500;letter-spacing:-.01em}#title p{font-size:30px;color:var(--mut);margin:10px 0 0;font-family:"New York",Georgia,serif}
+#families{gap:28px;flex-direction:row;align-items:center}.fam{background:#0E1527ee;border:1px solid #1B2540;border-radius:16px;padding:22px 26px;width:360px}
+.fam .h{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}.fam .p{display:flex;align-items:center;gap:12px;margin:14px 0}.ini{width:46px;height:46px;border-radius:50%;background:#1B2540;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px}
+.fam .n{font-size:22px}.fam .r{font-size:13px;color:var(--mut)}.chip{display:inline-block;padding:2px 9px;border-radius:6px;font-weight:800;font-size:13px;margin-left:8px}
+.chip.O{background:var(--O);color:#fff}.chip.A{background:var(--A);color:#111}.chip.B{background:var(--B);color:#111}.chip.AB{background:var(--AB);color:#111}
+.fam .why{margin-top:10px;color:var(--kid);font-size:15px}.fam .why b{color:var(--fg)}
+#qr{background:#0E1527ee;border:1px solid #1B2540;border-radius:16px;padding:20px;position:absolute;left:60px;top:60px;width:300px;display:none;text-align:center}#qr div{font-size:15px;margin-top:10px;color:var(--fg)}#qr svg{width:240px;height:240px;background:#fff;border-radius:8px;padding:8px}
+#help{position:absolute;right:30px;top:40px;background:#0E1527f2;border:1px solid #1B2540;border-radius:12px;padding:18px 22px;font-size:15px;line-height:1.7;display:none;z-index:9}#help b{font-family:ui-monospace,Menlo,monospace;color:var(--glow)}
+/* svg */
+.county{fill:var(--county);stroke:var(--cstroke);stroke-width:1.2}.hosp circle.g{fill:var(--glow);opacity:.18}.hosp circle.c{fill:var(--glow)}
+.hosp.off circle{fill:#3a4257!important}.hosp text{fill:var(--fg);font-size:14px;font-weight:600}.hosp .city{fill:var(--mut);font-size:10px;font-weight:400}
+.priv{fill:#0E1527;stroke:#2a3a5e;stroke-width:1}.hosp text.priv-t{fill:var(--mut);font-size:6.5px;letter-spacing:.12em;font-weight:600}.hosp text.priv-l{fill:#c7d2ea;font-size:8px;font-family:ui-monospace,Menlo,monospace;font-weight:400}.hosp text.priv-l.ok{fill:var(--lit)}.hosp text.priv-l.ref{fill:var(--warn)}
+.link{stroke:#2a3a5e;stroke-width:1.5;stroke-dasharray:6 8;fill:none}.hub rect{fill:#0E1527;stroke:var(--glow);stroke-width:1.5}.hub text{fill:var(--fg);font-size:10px;font-weight:600}.hub .s{fill:var(--mut);font-weight:400;font-size:8px}
+.pkt{fill:var(--pkt)}.pkt.rep{fill:var(--lit)}.pktl{fill:#cfe6ff;font-size:8px;font-family:ui-monospace,Menlo,monospace}
+.arc{fill:none;stroke:var(--lit);stroke-width:3.2;stroke-linecap:round;filter:drop-shadow(0 0 6px #3DDC9788)}.arc.dim{stroke:#3a4257;filter:none;stroke-dasharray:8 8}.arc.pending{stroke:#3a4a6a}
+.arcl{fill:var(--fg);font-size:9px;font-weight:600;paint-order:stroke;stroke:#0B1020;stroke-width:4px}.courier{fill:var(--kid);filter:drop-shadow(0 0 8px #FF6B6B99)}
+.stan circle{fill:var(--warn)}.stan text{fill:var(--warn);font-size:9px;font-weight:600}.kidney{fill:var(--kid);filter:drop-shadow(0 0 10px #FF6B6B)}.kidl{fill:var(--kid);font-size:9px;font-weight:600}
+.scan{stroke:var(--glow);stroke-width:2;fill:none;opacity:.7}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style></head><body>
+<div id="stage">
+ <svg id="map" viewBox="330 110 1000 671" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <g id="counties"></g><g id="links"></g><g id="arcs"></g><g id="hosps"></g><g id="hub"></g><g id="pkts"></g><g id="stanford"></g><g id="couriers"></g>
+ </svg>
+ <div id="title" class="overlay"><h1>Domino</h1><p>Three hospitals. Twelve families. No shared database.</p></div>
+ <div id="families" class="overlay"></div>
+ <div id="qr"><div style="color:#8A97B5;font-size:12px;letter-spacing:.14em">START A CHAIN</div><div id="qrsvg"></div><div>Someone in this room can start a chain.</div></div>
+ <div id="right">
+  <div class="card" id="counterCard"><div id="counter">0</div><div id="counterLbl">transplants</div></div>
+  <div class="card" id="plan"><h3>Plan</h3><div id="planText">—</div><div id="planLegs"></div><div id="audit"></div><div id="coordThought"></div></div>
+  <div class="card" id="nego"><h3>Negotiation</h3><div id="negoRows"></div></div>
+  <div class="card" id="score"><h3>Why agents?</h3><div class="r"><div class="big" id="kw">9 / 12</div><div><div>Keyword rules</div><div class="traps" id="traps"></div></div></div><div class="r"><div class="big" id="ag">—</div><div>Agent reading each hospital's own rulebook<div style="font-size:12px;color:#8A97B5" id="agSrc">docs/evidence/readiness-eval.json</div></div></div></div>
+  <div class="card" id="chat"><h3>Agents</h3><div id="chatLines"></div><div id="timeline"></div></div>
+ </div>
+ <div id="bottom">
+  <div id="badge">REHEARSAL</div>
+  <div id="caption"></div>
+  <div id="wire"><div class="t">wire · last 6 packets · field names and bytes only</div><div id="wireLines"></div></div>
+  <div id="footer">All patients, donors and hospitals are fictional. Synthetic data. &nbsp;·&nbsp; H for keys</div>
+ </div>
+ <div id="help"><b>→ / Space</b> next · <b>←</b> back · <b>R</b> reset · <b>S</b> finish beat from script · <b>G</b> fire the chain · <b>B</b> Harbor Point offline · <b>F</b> fullscreen · <b>1/2/3</b> consoles · <b>M</b> mode · <b>H</b> help</div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const PLACE={alder:'san_jose',harbor:'oakland',riverbend:'sacramento'};
+const HNAME={alder:'Alder Medical Center',harbor:'Harbor Point Hospital',riverbend:'Riverbend General'};
+const CITY={alder:'San Jose',harbor:'Oakland',riverbend:'Sacramento'};
+const HUB={x:415,y:290};
+const SHORT={alder:'Alder',harbor:'Harbor Point',riverbend:'Riverbend'};
+let story=null, MAP=null, beat=-1, timers=[], names={}, POS={}, curPlanLegs=[], waiting=null, harborOff=false, reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fitStage=()=>{const s=Math.min(innerWidth/1920,innerHeight/1080);const st=$('#stage');st.style.transform=`translate(${(innerWidth-1920*s)/2}px,${(innerHeight-1080*s)/2}px) scale(${s})`};
+addEventListener('resize',fitStage);fitStage();
+function svgEl(t,a={},txt){const e=document.createElementNS('http://www.w3.org/2000/svg',t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;return e}
+async function boot(){
+ MAP=await (await fetch('/api/map')).json(); story=await (await fetch('/api/story')).json(); names=story.names;
+ for(const h in PLACE){const p=MAP.places[PLACE[h]].xy;POS[h]={x:p[0],y:p[1]}} POS.stanford={x:MAP.places.stanford.xy[0],y:MAP.places.stanford.xy[1]};
+ const g=$('#counties');MAP.counties.forEach(c=>g.appendChild(svgEl('path',{d:c.d,class:'county'})));
+ drawHospitals();drawStanford();
+ render(0);
+}
+function drawHospitals(){
+ const g=$('#hosps');g.innerHTML='';
+ for(const h in POS){ if(h==='stanford')continue;const {x,y}=POS[h];const grp=svgEl('g',{class:'hosp',id:'h-'+h});
+  grp.appendChild(svgEl('circle',{cx:x,cy:y,r:16,class:'g'}));grp.appendChild(svgEl('circle',{cx:x,cy:y,r:5,class:'c'}));
+  const left=h==='harbor';const lx=left?x-176:x+14,ly=y-4;
+  grp.appendChild(svgEl('text',{x:lx,y:ly},HNAME[h]));grp.appendChild(svgEl('text',{x:lx,y:ly+13,class:'city'},CITY[h]+', California'));
+  // private panel
+  const px=left?x-186:x+12,py=y+16;
+  grp.appendChild(svgEl('rect',{x:px,y:py,width:172,height:48,rx:5,class:'priv'}));
+  grp.appendChild(svgEl('text',{x:px+7,y:py+11,class:'priv-t'},'PRIVATE · NEVER LEAVES THIS HOSPITAL'));
+  grp.appendChild(svgEl('text',{x:px+7,y:py+26,class:'priv-l',id:'pl1-'+h},''));grp.appendChild(svgEl('text',{x:px+7,y:py+40,class:'priv-l',id:'pl2-'+h},''));
+  g.appendChild(grp)}
+}
+function drawStanford(){const g=$('#stanford');g.innerHTML='';const {x,y}=POS.stanford;const s=svgEl('g',{class:'stan'});s.appendChild(svgEl('circle',{cx:x,cy:y,r:3.5}));s.appendChild(svgEl('text',{x:x-112,y:y+3},'You are here · Stanford'));g.appendChild(s)}
+function priv(h,line,txt,cls){const e=$('#pl'+line+'-'+h);if(!e)return;e.textContent=txt;e.setAttribute('class','priv-l '+(cls||''))}
+function showHub(on){const g=$('#hub'),l=$('#links');g.innerHTML='';l.innerHTML='';if(!on)return;
+ for(const h in PLACE){l.appendChild(svgEl('path',{d:`M${HUB.x},${HUB.y} L${POS[h].x},${POS[h].y}`,class:'link',id:'link-'+h}))}
+ const hub=svgEl('g',{class:'hub'});hub.appendChild(svgEl('rect',{x:HUB.x-78,y:HUB.y-20,width:156,height:40,rx:7}));
+ hub.appendChild(svgEl('text',{x:HUB.x,y:HUB.y-3,'text-anchor':'middle'},'Flower SuperGrid'));hub.appendChild(svgEl('text',{x:HUB.x,y:HUB.y+11,'text-anchor':'middle',class:'s'},'coordinator · Endeavor'));g.appendChild(hub)}
+function packet(h,label,reply){const from=reply?POS[h]:HUB,to=reply?HUB:POS[h];const g=$('#pkts');const c=svgEl('circle',{r:4,class:'pkt'+(reply?' rep':'')});const t=svgEl('text',{class:'pktl'},label);g.appendChild(c);g.appendChild(t);
+ const dur=reduced?0:700,t0=performance.now();(function f(now){const k=Math.min(1,(now-t0)/(dur||1));const x=from.x+(to.x-from.x)*k,y=from.y+(to.y-from.y)*k;c.setAttribute('cx',x);c.setAttribute('cy',y);t.setAttribute('x',x+7);t.setAttribute('y',y-6);if(k<1)requestAnimationFrame(f);else setTimeout(()=>{c.remove();t.remove()},250)})(t0)}
+function arcPath(a,b,k){const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy);const m=Math.min(90,L*.24)*(1+0.7*(k||0));const cx=(a.x+b.x)/2-dy/L*m,cy=(a.y+b.y)/2+dx/L*m;return `M${a.x},${a.y} Q${cx},${cy} ${b.x},${b.y}`}
+function legPos(l){return [l.from_place==='stanford'?POS.stanford:POS[l.donor_hospital],POS[l.patient_hospital]]}
+function drawArc(l,i,animate){const [a,b]=legPos(l);const g=$('#arcs');const key=`${a.x},${a.y}>${b.x},${b.y}`;const k=[...g.querySelectorAll('.arc')].filter(e=>e.dataset.dir===key).length;const p=svgEl('path',{d:arcPath(a,b,k),class:'arc','data-dir':key,'data-pair':l.donor_pair+'|'+l.patient_pair,id:'arc-'+l.donor_pair+'-'+l.patient_pair});g.appendChild(p);
+ const len=p.getTotalLength();const mid=p.getPointAtLength(len*(0.5+0.22*(k%2?1:-1)*Math.ceil(k/2)));const lbl=svgEl('text',{x:mid.x+5,y:mid.y+(k?10:-5),class:'arcl'},`${l.donor} → ${l.patient}`);g.appendChild(lbl);
+ if(animate&&!reduced){p.style.strokeDasharray=len;p.style.strokeDashoffset=len;p.style.transition='stroke-dashoffset .6s ease-out';requestAnimationFrame(()=>requestAnimationFrame(()=>{p.style.strokeDashoffset=0}));courier(p,1600)}}
+function courier(p,dur){const c=svgEl('path',{d:'M-6,-3.5 C-6,-7.5 -1,-7.5 0,-4 C1,-7.5 6,-7.5 6,-3.5 C6,2 0,6 0,6 C0,6 -6,2 -6,-3.5Z',class:'courier'});$('#couriers').appendChild(c);const len=p.getTotalLength(),t0=performance.now();
+ (function f(now){const k=Math.min(1,(now-t0)/dur);const pt=p.getPointAtLength(len*k);c.setAttribute('transform',`translate(${pt.x},${pt.y})`);if(k<1)requestAnimationFrame(f);else setTimeout(()=>c.remove(),300)})(t0)}
+function dimArcs(pair){document.querySelectorAll('#arcs .arc').forEach(a=>{if(a.dataset.pair.split('|').includes(pair))a.classList.add('dim')})}
+function counter(v){const c=$('#counter');c.textContent=v;c.classList.add('tick');setTimeout(()=>c.classList.remove('tick'),260)}
+function wire(dir,who,kind,fields,bytes){const w=$('#wireLines');const d=document.createElement('div');d.textContent=`${dir==='out'?'→':'←'} ${who.padEnd(9)} ${kind.padEnd(9)} ${fields}  ${bytes} B`;w.prepend(d);while(w.children.length>6)w.lastChild.remove()}
+function chat(who,text,src){$('#chat').style.display='block';const d=document.createElement('div');d.className='line';d.innerHTML=`<span class="who">${who}:</span> ${text} ${src?`<span class="src">(${src})</span>`:''}`;$('#chatLines').appendChild(d)}
+function caption(t){$('#caption').textContent=t}
+function fmtFields(f){return f.join(' · ')}
+function kidneyAtStanford(on){document.querySelectorAll('.kidney,.kidl').forEach(e=>e.remove());if(!on)return;const {x,y}=POS.stanford;const g=$('#stanford');const k=svgEl('path',{d:'M-8,-5 C-8,-11 -1,-11 0,-6 C1,-11 8,-11 8,-5 C8,2.5 0,8 0,8 C0,8 -8,2.5 -8,-5Z',class:'kidney',transform:`translate(${x-118},${y-24})`});g.appendChild(k);g.appendChild(svgEl('text',{x:x-106,y:y-21,class:'kidl'},'the stranger · blood O'))}
+function timeline(legs,tight){const T=$('#timeline');T.style.display='block';T.innerHTML='';const t0=7,t1=14.5,W=500;const X=h=>{const [hh,mm]=h.split(':');return (parseInt(hh)+parseInt(mm)/60-t0)/(t1-t0)*W};
+ for(let h=7;h<=14;h++){const e=document.createElement('div');e.className='h';e.style.left=X(h+':00')+'px';e.textContent=h+':00';T.appendChild(e)}
+ legs.forEach((l,i)=>{const b=document.createElement('div');b.className='bar'+(l.leg===tight?' tight':'');b.style.left=X(l.out)+'px';b.style.width=(X(l.arrive)-X(l.out))+'px';b.style.top=(18+i*18)+'px';b.textContent=`${l.donor} → ${l.patient} ${l.out}–${l.arrive}${l.leg===tight?' · tightest':''}`;T.appendChild(b)})}
+function apply(ev,instant){
+ switch(ev.type){
+ case 'ui':
+  $('#title').style.display=ev.show==='title'?'flex':'none';$('#families').style.display=ev.show==='families'?'flex':'none';
+  if(ev.show==='families'){$('#families').innerHTML=ev.pairs.map(p=>{const n=names[p];return `<div class="fam"><div class="h">${HNAME[n.hospital]} · ${CITY[n.hospital]}</div>
+   <div class="p"><div class="ini">${n.patient[0]}</div><div><div class="n">${n.patient}<span class="chip ${n.patient_blood}">${n.patient_blood}</span></div><div class="r">patient</div></div></div>
+   <div class="p"><div class="ini">${n.donor[0]}</div><div><div class="n">${n.donor}<span class="chip ${n.donor_blood}">${n.donor_blood}</span></div><div class="r">${n.relation} · would give a kidney</div></div></div>
+   <div class="why">don't match: <b>${ev.why[p]}</b></div></div>`}).join('')}
+  if(ev.show==='scan'){for(const h in PLACE){priv(h,1,'scanning own list …','');priv(h,2,'','')}}
+  if(ev.show==='hub')showHub(true);
+  if(ev.show==='scoreboard'){$('#score').style.display='block';$('#kw').textContent=`${ev.keyword[0]} / ${ev.keyword[1]}`;$('#traps').innerHTML=ev.traps.map(t=>`<div>${t.text}</div>`).join('');fetch('/api/eval').then(r=>r.ok?r.json():null).then(j=>{$('#ag').textContent=j&&j.correct!=null?`${j.correct} / ${j.total}`:'—'}).catch(()=>{})}
+  if(ev.show==='qr'){$('#qr').style.display='block';fetch('/api/qr').then(r=>r.text()).then(s=>{$('#qrsvg').innerHTML=s})}
+  if(ev.show==='close'){$('#planLegs').insertAdjacentHTML('beforeend','<div style="margin-top:8px;color:#E8EDF7">Each hospital’s rules applied where they live.</div>')}
+  break;
+ case 'alone':priv(ev.hospital,1,`local search · ${ev.found} exchanges`,ev.found===0?'ok':'');break;
+ case 'run.start':setBadge(ev);if(ev.phase==='schedule'){$('#nego').style.display='none';$('#score').style.display='none'}break;
+ case 'ask':if(!instant)packet(ev.to,`${ev.kind} · ${ev.fields.slice(0,3).join(' · ')}`);wire('out',ev.to,ev.kind,fmtFields(ev.fields),ev.bytes);break;
+ case 'reply':{const p=ev.payload;let lbl=ev.kind;if(ev.kind==='compat'&&p.compatible)lbl=p.compatible.map(c=>`${c.pair} · compatible · ${c.strength}`)[0]||'compat · none';if(ev.kind==='readiness')lbl=p.readiness.filter(r=>r.readiness!=='ready').map(r=>`${r.pair} · ${r.readiness.replace(/_/g,' ')} · ${r.reason}`)[0]||'readiness · all ready';
+  if(!instant)packet(ev.from,lbl,true);wire('in',ev.from,ev.kind,Object.keys(p).join(' · '),ev.bytes);break}
+ case 'thought':if(ev.who==='coordinator')$('#coordThought').textContent='coordinator · '+ev.text;else priv(ev.who,1,ev.text,'');break;
+ case 'refusal':priv(ev.from,2,'refused: '+ev.question,'ref');break;
+ case 'plan':{curPlanLegs=ev.legs;$('#planText').textContent=ev.explanation;$('#audit').textContent='';
+  $('#planLegs').innerHTML=ev.legs.map(l=>`${l.from_place?'Stanford':SHORT[l.donor_hospital]} → ${SHORT[l.patient_hospital]} · ${l.donor} → ${l.patient}`).join('<br>')+(ev.bridge_donor?`<br><span style="color:#3DDC97">${ev.bridge_donor} · bridge donor · starts the next chain</span>`:'');
+  if(ev.phase==='cycles'){$('#arcs').innerHTML=''}
+  ev.legs.forEach((l,i)=>{if(instant||reduced)drawArc(l,i,false);else timers.push(setTimeout(()=>drawArc(l,i,true),i*(ev.phase==='chain'?1700:700)))});
+  if(ev.phase==='chain'&&!instant){ev.legs.forEach((l,i)=>timers.push(setTimeout(()=>counter(parseInt($('#counter').textContent)+1),i*1700+1500)))}
+  if(ev.phase==='chain'&&instant){counter(story.counter_expected[3])}
+  break}
+ case 'plan.dim':dimArcs(ev.pair);break;
+ case 'audit':{const a=$('#audit');a.className=ev.ok?'':'bad';a.textContent=ev.ok?'Checked by code and by a second model ✓':'Audit flagged · plan held';break}
+ case 'counter':if(!(instant&&beat>=7))counter(ev.value);break;
+ case 'approval.request':{$('#score').style.display='none';$('#nego').style.display='block';$('#negoRows').innerHTML=`<div class="row"><span>${HNAME[ev.hospital]} · ${names[ev.pair].patient}</span><span style="color:#FFC857">waiting for the surgeon…</span></div><div class="row" style="color:#8A97B5">agent advice: ${ev.agent_advice.replace(/_/g,' ')} · ${ev.reason}</div>`;break}
+ case 'approval.result':{const r=$('#negoRows');if(ev.hospital==='riverbend'){r.firstChild.lastChild.textContent=ev.decision==='hold'?`ask others to hold until ${ev.hold_until}`:ev.decision.replace(/_/g,' ');r.firstChild.lastChild.style.color='#E8EDF7'}else{r.insertAdjacentHTML('beforeend',`<div class="row"><span>${HNAME[ev.hospital]} · ${names[ev.pair].patient}</span><span style="color:#3DDC97">approved</span></div>`)}break}
+ case 'hold.request':if(!instant){packet('alder','hold · until '+ev.hold_until);packet('harbor','hold · until '+ev.hold_until)}wire('out','alder,harbor','hold','hold_until · reason',96);break;
+ case 'hold.reply':{if(!instant)packet(ev.from,ev.decision+(ev.reason!=='none'?' · '+ev.reason.replace(/_/g,' '):''),true);wire('in',ev.from,'hold',`decision · reason`,ev.decision==='accept'?38:62);
+  $('#negoRows').insertAdjacentHTML('beforeend',`<div class="row"><span>${HNAME[ev.from]}</span><span style="color:${ev.decision==='accept'?'#3DDC97':'#FFC857'}">${ev.decision}${ev.reason!=='none'?' · '+ev.reason.replace(/_/g,' '):''}</span></div>`);break}
+ case 'hold.result':$('#negoRows').insertAdjacentHTML('beforeend',`<div class="row"><span class="stamp">NO CONSENSUS</span><span>${names.R1.patient} keeps her place · next round</span></div>`);break;
+ case 'memory':break;
+ case 'chain.start':$('#qr').style.display='none';kidneyAtStanford(true);break;
+ case 'constraint':{const c=ev.constraints;const parts=[];if(c.donor_start_not_before)parts.push(`donor surgeries start ${c.donor_start_not_before}`);if(c.implant_start_by)parts.push(`implant by ${c.implant_start_by}`);if(c.organ_arrival_by)parts.push(`organs must arrive by ${c.organ_arrival_by}`);chat(SHORT[ev.hospital],parts.join(' · '),`${ev.code} ${ev.sources[0]}`);break}
+ case 'leg.check':wire('in',ev.to,'leg',`accept · reason · out · arrive`,58);break;
+ case 'schedule':chat('Coordinator',ev.explanation);timeline(ev.legs,ev.tightest);break;
+ case 'node.status':break;
+ case 'phase.end':break;
+ }
+}
+function setBadge(ev){const b=$('#badge');if(!ev||ev.mode==='scripted'){b.textContent='REHEARSAL';b.className=''}else if(ev.mode==='replay'){b.textContent='REPLAY · run '+ev.run_id;b.className='replay'}else{b.textContent='LIVE · SuperGrid run '+ev.run_id+' · '+ev.nodes.length+' SuperNodes online · coordinator: Endeavor';b.className='live'}}
+function resetVisuals(){timers.forEach(clearTimeout);timers=[];waiting=null;['#arcs','#pkts','#couriers','#links','#hub','#wireLines','#chatLines','#negoRows'].forEach(s=>$(s).innerHTML='');
+ $('#counter').textContent='0';$('#planText').textContent='—';$('#planLegs').innerHTML='';$('#audit').textContent='';$('#coordThought').textContent='';$('#nego').style.display='none';$('#chat').style.display='none';$('#timeline').style.display='none';$('#score').style.display='none';$('#qr').style.display='none';
+ $('#title').style.display='none';$('#families').style.display='none';kidneyAtStanford(false);drawHospitals();setBadge(null)}
+function playEvents(evs,offset){evs.forEach(e=>timers.push(setTimeout(()=>apply(e.ev,false),e.t+(offset||0))))}
+function render(i){resetVisuals();beat=Math.max(0,Math.min(story.beats.length-1,i));fetch('/api/beat?beat='+beat,{method:'POST'});
+ for(let k=0;k<beat;k++){const b=story.beats[k];b.events.forEach(e=>apply(e.ev,true));if(b.branches){const br=b.branches[b.wait==='give'?'give':'hold'];br.forEach(e=>apply(e.ev,true))}}
+ const b=story.beats[beat];caption(b.caption);playEvents(b.events,0);
+ if(b.wait){const last=Math.max(0,...b.events.map(e=>e.t));waiting={beat:beat,kind:b.wait,at:performance.now()+last};pollWait()}}
+function finishBranch(name){if(!waiting)return;const b=story.beats[waiting.beat];const br=b.branches[name]||b.branches[Object.keys(b.branches)[0]];waiting=null;playEvents(br,0)}
+async function pollWait(){if(!waiting)return;try{const s=await (await fetch('/api/state')).json();if(waiting.kind==='approval'&&s.decisions.R1){return finishBranch(s.decisions.R1.decision)}if(waiting.kind==='give'&&s.give){return finishBranch('give')}}catch(e){}setTimeout(pollWait,1000)}
+async function forceFinish(){if(!waiting)return;if(waiting.kind==='approval'){await fetch('/api/decision',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({hospital:'riverbend',pair:'R1',decision:'hold',hold_until:'2026-10-09',reason:'infection'})})}else{await fetch('/api/give',{method:'POST'})}}
+addEventListener('keydown',e=>{const k=e.key;
+ if(k==='ArrowRight'||k===' '||k==='PageDown'){e.preventDefault();render(beat+1)}else if(k==='ArrowLeft'){render(beat-1)}else if(k==='r'||k==='R'){fetch('/api/reset',{method:'POST'}).then(()=>render(0))}
+ else if(k==='s'||k==='S'){forceFinish()}else if(k==='g'||k==='G'){if(waiting&&waiting.kind==='give')fetch('/api/give',{method:'POST'})}
+ else if(k==='b'||k==='B'){harborOff=!harborOff;$('#h-harbor').classList.toggle('off',harborOff);$('#planText').textContent=harborOff?'Harbor Point offline · plan on hold · no surgery proceeds without its surgeon':(curPlanLegs.length?'back · plan resumes unchanged':'—')}
+ else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}
+ else if(k==='h'||k==='H'){const h=$('#help');h.style.display=h.style.display==='block'?'none':'block'}
+ else if(k==='1'||k==='2'||k==='3'){open('/console/'+['alder','harbor','riverbend'][parseInt(k)-1],'_blank')}
+ else if(k==='m'||k==='M'){alert('Scripted mode only in this build. Live/replay modes: see README.')}});
+boot();
+</script></body></html>

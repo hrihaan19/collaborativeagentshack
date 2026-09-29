@@ -1,0 +1,39 @@
+{
+ "hospitals": {
+  "alder": {"name": "Alder Medical Center", "city": "San Jose", "place": "san_jose"},
+  "harbor": {"name": "Harbor Point Hospital", "city": "Oakland", "place": "oakland"},
+  "riverbend": {"name": "Riverbend General", "city": "Sacramento", "place": "sacramento"}
+ },
+ "pairs": [
+  {"id": "A1", "hospital": "alder", "patient": {"name": "Maria", "blood": "A", "unacceptable_antigens": ["B27", "DR4"], "notes": "38F. ESRD from IgA nephropathy. Peritoneal dialysis. Labs current (9/22). No infections. Ready.", "expected_readiness": "ready"}, "donor": {"name": "Elena", "blood": "B", "hla": ["A1", "A24", "B27", "B7", "DR15", "DR7"], "relation": "sister"}},
+  {"id": "A2", "hospital": "alder", "patient": {"name": "Hannah", "blood": "B", "unacceptable_antigens": ["A1", "A24", "B27", "B35", "B51", "DR1", "DR15", "DR4"], "notes": "51F. Polycystic kidney disease. Hemodialysis Mon/Wed/Fri. Cardiac clearance 8/30. Ready.", "expected_readiness": "ready"}, "donor": {"name": "Mark", "blood": "A", "hla": ["A24", "A3", "B27", "B8", "DR13", "DR4"], "relation": "husband"}},
+  {"id": "A3", "hospital": "alder", "patient": {"name": "Wei", "blood": "O", "unacceptable_antigens": ["A24", "B35", "DR15", "DR7"], "notes": "64M. Diabetic nephropathy. Hemodialysis Tue/Thu/Sat. Ready.", "expected_readiness": "ready"}, "donor": {"name": "Lin", "blood": "AB", "hla": ["A24", "A68", "B27", "B8", "DR13", "DR4"], "relation": "daughter"}},
+  {"id": "A4", "hospital": "alder", "patient": {"name": "Omar", "blood": "O", "unacceptable_antigens": ["A24", "B35", "DR15", "DR7"], "notes": "29M. FSGS. Highly sensitized (prior transplant 2019). Ready.", "expected_readiness": "ready"}, "donor": {"name": "Yusuf", "blood": "AB", "hla": ["A11", "A2", "B51", "B8", "DR13", "DR4"], "relation": "brother"}},
+  {"id": "H1", "hospital": "harbor", "patient": {"name": "James", "blood": "B", "unacceptable_antigens": ["A11", "A3", "B35", "B44", "B51", "DR1", "DR4"], "notes": "45M. Hypertensive nephrosclerosis. Hemodialysis Mon/Wed/Fri. Ready.", "expected_readiness": "ready"}, "donor": {"name": "Priya", "blood": "A", "hla": ["A11", "A3", "B51", "B7", "DR1", "DR7"], "relation": "wife"}},
+  {"id": "H2", "hospital": "harbor", "patient": {"name": "Kenji", "blood": "O", "unacceptable_antigens": ["A24", "B35", "DR15", "DR7"], "notes": "58M. Diabetic nephropathy. Hemodialysis Tue/Thu/Sat; prefers surgery on a non-dialysis day. Ready.", "expected_readiness": "ready"}, "donor": {"name": "Aiko", "blood": "B", "hla": ["A11", "A3", "B44", "B8", "DR11", "DR7"], "relation": "wife"}},
+  {"id": "H3", "hospital": "harbor", "patient": {"name": "Fatima", "blood": "B", "unacceptable_antigens": ["A11", "A24", "A3", "B27", "B35", "B44", "DR1", "DR15", "DR7"], "notes": "33F. Lupus nephritis, quiescent 18 months. Labs current. Ready.", "expected_readiness": "ready"}, "donor": {"name": "Samir", "blood": "A", "hla": ["A3", "A68", "B27", "B7", "DR1", "DR4"], "relation": "brother"}},
+  {"id": "H4", "hospital": "harbor", "patient": {"name": "Rosa", "blood": "O", "unacceptable_antigens": ["A24", "B35", "DR15", "DR7"], "notes": "67F. ESRD. Awaiting cardiac re-clearance (echo scheduled 10/6). Needs review.", "expected_readiness": "needs_review", "expected_reason": "cardiac_clearance"}, "donor": {"name": "Luis", "blood": "A", "hla": ["A11", "A2", "B27", "B8", "DR11", "DR4"], "relation": "son"}},
+  {"id": "R1", "hospital": "riverbend", "patient": {"name": "Grace", "blood": "A", "unacceptable_antigens": ["A24", "B27", "B35", "DR15", "DR4"], "notes": "41F. ESRD, highly sensitized (3 pregnancies). ADMITTED Fri 9/25 with community-acquired pneumonia; IV antibiotics; afebrile x24h. Listing status: temporarily inactive.", "expected_readiness": "not_this_week", "expected_reason": "admission"}, "donor": {"name": "Sam", "blood": "O", "hla": ["A24", "A68", "B35", "B7", "DR15", "DR7"], "relation": "brother"}},
+  {"id": "R2", "hospital": "riverbend", "patient": {"name": "David", "blood": "A", "unacceptable_antigens": ["A11", "B35", "B51", "DR1", "DR15", "DR7"], "notes": "36M. Alport syndrome. Labs current; crossmatch sample sent 9/24. Ready.", "expected_readiness": "ready"}, "donor": {"name": "Ruth", "blood": "B", "hla": ["A1", "A68", "B51", "B7", "DR11", "DR4"], "relation": "mother"}},
+  {"id": "R3", "hospital": "riverbend", "patient": {"name": "Aisha", "blood": "A", "unacceptable_antigens": ["A11", "A24", "B35", "B51", "DR15", "DR7"], "notes": "47F. Diabetic nephropathy. Ready.", "expected_readiness": "ready"}, "donor": {"name": "Malik", "blood": "B", "hla": ["A11", "A2", "B27", "B35", "DR1", "DR11"], "relation": "husband"}},
+  {"id": "R4", "hospital": "riverbend", "patient": {"name": "Tom", "blood": "O", "unacceptable_antigens": ["A24", "B35", "DR15", "DR7"], "notes": "55M. ESRD. Traveling out of state 10/1-10/8. Not available this week.", "expected_readiness": "not_this_week", "expected_reason": "travel"}, "donor": {"name": "Nora", "blood": "B", "hla": ["A11", "A68", "B51", "B7", "DR15", "DR4"], "relation": "sister"}}
+ ],
+ "altruist": {"name": "the stranger", "blood": "O", "hla": ["A2", "A68", "B7", "B8", "DR11", "DR13"]},
+ "calendars": {
+  "alder": "Transplant OR-3: Thu 10/1 07:00-12:00 open; Fri 10/2 07:00-12:00 open. Dr. Ruiz (recipient surgeon) on call Thu night, prefers Fri. Donor nephrectomy team (Dr. Chen) available Thu and Fri.",
+  "harbor": "Dr. Okafor (transplant surgeon) at ASTS course Thu 10/1, all day. OR-1 Fri 10/2 07:00-13:00 open. Perfusion tech unavailable Fri after 14:00.",
+  "riverbend": "Fri 10/2 OR-2 07:00-15:00 open. Thu 10/1: OR maintenance, closed. Recipient team requires donor organ arrival by 13:00 for same-day implant."
+ },
+ "expected_windows": {"alder": ["Thu AM", "Fri AM"], "harbor": ["Fri AM"], "riverbend": ["Fri AM", "Fri PM"]},
+ "expected_slot": "Fri 10/2 07:00 at all hospitals",
+ "drive_times_hours": {"oakland-san_jose": 1.0, "san_jose-sacramento": 2.0, "sacramento-oakland": 1.5, "oakland-sacramento": 1.5},
+ "story": {
+  "alone": {"alder": 0, "harbor": 0, "riverbend": 0},
+  "loop": [["Elena", "James"], ["Priya", "Grace"], ["Sam", "Maria"]],
+  "swap_after_grace_not_this_week": [["Elena", "James"], ["Priya", "Maria"]],
+  "chain": [["the stranger", "Kenji"], ["Aiko", "Hannah"], ["Mark", "David"], ["Ruth", "Fatima"], ["Samir", "Aisha"]],
+  "bridge_donor_after_chain": "Malik",
+  "counter": [0, 3, 2, 7],
+  "compatibility_rule": "donor gives to patient only if ABO-compatible (O to anyone; A to A/AB; B to B/AB; AB to AB) AND none of the donor's six HLA antigens is in the patient's unacceptable_antigens list. Verified: with this data exactly these donor->patient edges exist: Elena->James, Priya->Maria, Priya->Grace, Sam->Maria, Aiko->Hannah, Mark->David, Ruth->Fatima, Samir->Aisha; the stranger (O) is compatible with every patient; no edge exists inside a single hospital."
+ }
+}

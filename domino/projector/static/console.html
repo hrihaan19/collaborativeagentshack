@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Domino — hospital console</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{--bg:#0B1020;--fg:#E8EDF7;--mut:#8A97B5;--card:#0E1527;--line:#1B2540;--lit:#3DDC97;--warn:#FFC857;--kid:#FF6B6B;--glow:#7FB3FF;--O:#2F6FED;--A:#F2C94C;--B:#F28DB2;--AB:#F3F4F6}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 -apple-system,BlinkMacSystemFont,system-ui,sans-serif}
+header{padding:18px 28px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline}
+h1{margin:0;font-size:22px}.mut{color:var(--mut);font-size:13px}
+main{max-width:1100px;margin:0 auto;padding:20px 28px;display:grid;grid-template-columns:1.2fr .8fr;gap:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+h3{margin:0 0 8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+.pair{border-bottom:1px dashed var(--line);padding:10px 0}.pair:last-child{border:0}
+.chip{display:inline-block;padding:1px 8px;border-radius:6px;font-weight:800;font-size:12px;margin-left:6px}.chip.O{background:var(--O);color:#fff}.chip.A{background:var(--A);color:#111}.chip.B{background:var(--B);color:#111}.chip.AB{background:var(--AB);color:#111}
+.rd{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;margin-left:8px}.ready{background:#12321f;color:var(--lit)}.not_this_week{background:#4a1616;color:var(--kid)}.needs_review{background:#3a2c0a;color:var(--warn)}
+details{margin-top:6px}summary{cursor:pointer;color:var(--glow);font-size:13px}blockquote{margin:6px 0;padding:8px 10px;border-left:3px solid var(--warn);background:#0B1020;font-size:13px}blockquote b{color:var(--mut);font-weight:600;display:block;font-size:11px;letter-spacing:.1em}
+button{background:#21262d;color:#fff;border:1px solid #3b434d;border-radius:8px;padding:10px 14px;cursor:pointer;font-weight:600;margin:4px 4px 4px 0;font-size:14px}
+button.ok{background:#1f5a38}button.bad{background:#5a1f1f}button.warn{background:#5a3f1f}button.big{font-size:16px}button:disabled{opacity:.35}
+.modal{border:2px solid var(--warn)}.modal input[type=date]{background:#0B1020;color:#fff;border:1px solid var(--line);border-radius:6px;padding:6px}
+.reasons label{display:inline-block;margin:2px 8px 2px 0;font-size:13px}
+footer{text-align:center;color:var(--mut);font-size:13px;padding:20px}
+.ledger div{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#b7c4e0}
+</style></head><body>
+<header><div><h1 id="title">Console</h1><div class="mut" id="sub"></div></div><div class="mut" id="node">SuperNode · scripted mode</div></header>
+<main>
+ <section>
+  <div class="card modal" id="approval" style="display:none">
+   <h3>Approval request · from the coordinator via Flower</h3>
+   <div id="apText"></div>
+   <div class="mut" style="margin:6px 0">Agent advice: <b id="apAdvice"></b></div>
+   <details open><summary>Evidence — the rule and the chart line behind the advice</summary><div id="apEv"></div></details>
+   <div class="reasons" style="margin:8px 0">Reason: <label><input type="radio" name="reason" value="infection" checked> infection</label><label><input type="radio" name="reason" value="admission"> admission</label><label><input type="radio" name="reason" value="travel"> travel</label><label><input type="radio" name="reason" value="labs_pending"> labs pending</label><label><input type="radio" name="reason" value="cardiac_clearance"> cardiac clearance</label><label><input type="radio" name="reason" value="other"> other</label></div>
+   <button class="ok big" onclick="decide('approve')">Approve</button><button class="warn big" onclick="decide('not_this_week')">Not this week</button><button class="bad big" onclick="decide('decline')">Decline</button>
+   <div style="margin-top:8px"><button class="warn big" onclick="decide('hold')">Ask others to hold until…</button> <input type="date" id="holdUntil" value="2026-10-09"></div>
+   <div class="mut" style="margin-top:8px">This button is only on this screen. No agent can press it.</div>
+  </div>
+  <div class="card modal" id="hold" style="display:none">
+   <h3>Hold request · from Riverbend via Flower</h3>
+   <div>Riverbend asks every hospital in the loop to hold until <b>2026-10-09</b> · reason: infection.</div>
+   <div style="margin:8px 0">Agent's suggested reply: <b id="hSug"></b> <span class="mut" id="hPriv"></span></div>
+   <button class="ok big" onclick="holdReply()">Send</button> <span class="mut">defaults to the suggestion after 20 s</span>
+  </div>
+  <div class="card"><h3>Private list · 4 pairs</h3><div id="pairs"></div></div>
+ </section>
+ <section>
+  <div class="card"><h3>Activity</h3><div id="activity" class="ledger"></div></div>
+  <div class="card"><h3>Everything this hospital has ever disclosed</h3><div class="ledger"><div>hello: hospital, pairs</div><div>compat: pair, donor_pair, compatible, strength</div><div>readiness: pair, readiness, reason</div><div>canary: <span style="color:#FFC857">refused</span></div><div>approve: pair, decision, hold_until, reason</div><div>hold: decision, reason</div><div>windows: slots, constraints, sources</div><div>leg: accept, reason</div></div></div>
+  <div class="card mut" id="mem"></div>
+ </section>
+</main>
+<footer>PRIVATE — this screen never leaves the hospital. All patients, donors and hospitals are fictional.</footer>
+<script>
+const H='{{HOSPITAL}}';const $=s=>document.querySelector(s);let data=null,holdTimer=null,sent=false;
+async function load(){data=await (await fetch('/api/console/'+H)).json();
+ $('#title').textContent=data.name;$('#sub').textContent=data.city+' · PRIVATE console';
+ $('#pairs').innerHTML=data.pairs.map(p=>`<div class="pair"><b>${p.id}</b> · ${p.patient}<span class="chip ${p.patient_blood}">${p.patient_blood}</span> <span class="mut">sensitized: ${p.sensitized} unacceptable antigens</span>
+  <span class="rd ${p.readiness.readiness}">${p.readiness.readiness.replace(/_/g,' ')}${p.readiness.reason!=='none'?' · '+p.readiness.reason.replace(/_/g,' '):''}</span>
+  <div class="mut">donor ${p.donor}<span class="chip ${p.donor_blood}">${p.donor_blood}</span> · ${p.relation}</div>
+  ${p.evidence.length?`<details><summary>Evidence</summary>${p.evidence.map(e=>`<blockquote><b>${e.doc} · ${e.section}</b>${e.quote}</blockquote>`).join('')}<div class="mut">read 3 notes · retrieved 2 of 13 rulebook sections · model on this Mac</div></details>`:''}</div>`).join('');
+ const st=data.state;const dec=st.decisions.R1;
+ $('#approval').style.display=data.pending_approval?'block':'none';
+ if(data.pending_approval){const r1=data.pairs.find(p=>p.id==='R1');$('#apText').innerHTML=`<b>${r1.patient}</b> (R1) would receive a kidney from Harbor Point · donor blood <span class="chip A">A</span> · proposed <b>Fri 10/2</b>.`;$('#apAdvice').textContent='not this week · infection';$('#apEv').innerHTML=r1.evidence.map(e=>`<blockquote><b>${e.doc} · ${e.section}</b>${e.quote}</blockquote>`).join('')}
+ const ph=data.pending_hold&&!sent;$('#hold').style.display=ph?'block':'none';
+ if(ph){$('#hSug').textContent=data.hold_suggestion.decision+(data.hold_suggestion.reason!=='none'?' · '+data.hold_suggestion.reason.replace(/_/g,' '):'');$('#hPriv').textContent='('+data.hold_suggestion.private+' — private, never sent)';if(!holdTimer)holdTimer=setTimeout(holdReply,20000)}
+ const act=[];if(st.beat>=3)act.push('← ask hello · kind · 24 B','← ask compat · pair, donor_blood, donor_hla · 212 B','→ reply compat · pair, compatible, strength','→ reply readiness · pair, readiness, reason','← ask canary · patient_names','→ REFUSED patient_names (before any record was read)');
+ if(st.beat>=6)act.push('← ask approve · pair, donor_hospital, donor_blood, date');if(dec)act.push(`→ reply approve · ${dec.decision}${dec.hold_until?' · until '+dec.hold_until:''} · ${dec.reason}`);
+ $('#activity').innerHTML=act.map(a=>`<div>${a}</div>`).join('')||'<div class="mut">waiting for the coordinator</div>';
+ $('#mem').textContent=dec&&H==='riverbend'?'Remembered for next time · decision saved to decisions.md':'';
+}
+async function decide(d){const reason=document.querySelector('input[name=reason]:checked').value;await fetch('/api/decision',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({hospital:H,pair:'R1',decision:d,hold_until:d==='hold'?$('#holdUntil').value:null,reason:d==='approve'?'none':reason})});load()}
+async function holdReply(){if(sent)return;sent=true;await fetch('/api/hold-reply',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({hospital:H,decision:data.hold_suggestion.decision,reason:data.hold_suggestion.reason})});load()}
+load();setInterval(load,1500);
+</script></body></html>

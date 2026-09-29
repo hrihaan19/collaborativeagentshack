@@ -1,0 +1,85 @@
+INFO:     Started server process [905]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:7800 (Press CTRL+C to quit)
+INFO:     127.0.0.1:53034 - "GET /projector HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53038 - "GET /projector HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53038 - "GET /api/map HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53040 - "GET /favicon.ico HTTP/1.1" 204 No Content
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 421, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 62, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/fastapi/applications.py", line 1163, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/starlette/applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/starlette/routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 2543, in app
+    await route.handle(scope, receive, send)
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 1241, in handle
+    await super().handle(scope, receive, send)
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/starlette/routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 137, in app
+    await response(scope, receive, send)
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/starlette/responses.py", line 167, in __call__
+    await send({"type": "http.response.body", "body": self.body})
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 39, in sender
+    await send(message)
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 39, in sender
+    await send(message)
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 161, in _send
+    await send(message)
+  File "/home/user/collaborativeagentshack/.venv/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 543, in send
+    raise RuntimeError("Response content longer than Content-Length")
+RuntimeError: Response content longer than Content-Length
+INFO:     127.0.0.1:53038 - "GET /api/story HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53038 - "POST /api/beat?beat=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53038 - "POST /api/reset HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53038 - "POST /api/beat?beat=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53038 - "POST /api/beat?beat=1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53038 - "POST /api/beat?beat=2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53038 - "POST /api/beat?beat=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56674 - "POST /api/beat?beat=4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56674 - "GET /api/eval HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56674 - "POST /api/beat?beat=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56688 - "GET /api/eval HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56688 - "POST /api/beat?beat=6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56674 - "GET /api/eval HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56688 - "GET /api/state HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56688 - "GET /api/state HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57524 - "POST /api/decision HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56688 - "GET /api/state HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58192 - "POST /api/beat?beat=7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58196 - "GET /api/eval HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58196 - "GET /api/state HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58192 - "GET /api/qr HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58212 - "POST /api/give HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58192 - "GET /api/state HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36990 - "POST /api/beat?beat=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37002 - "GET /api/eval HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:37002 - "GET /api/qr HTTP/1.1" 200 OK

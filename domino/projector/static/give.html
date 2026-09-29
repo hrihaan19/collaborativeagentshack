@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Domino — start a chain</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0;background:#000;color:#E8EDF7;font:20px/1.4 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;box-sizing:border-box}
+h1{font-family:"New York",Georgia,serif;font-weight:500;font-size:40px;margin:0 0 30px}button{font-size:26px;padding:26px 34px;border-radius:16px;border:0;background:#3DDC97;color:#0B1020;font-weight:800;width:100%;max-width:420px}
+p{color:#8A97B5;font-size:15px;margin-top:28px}#out{font-size:26px;margin-top:30px;display:none}</style></head><body>
+<h1>Start a chain</h1>
+<button id="b" onclick="go()">Give a kidney (in this demo)</button>
+<div id="out">Thank you. Watch the map.</div>
+<p>A demonstration with fictional patients. Nothing is collected.</p>
+<script>async function go(){const b=document.getElementById('b');b.disabled=true;await fetch('/api/give',{method:'POST'});b.style.display='none';document.getElementById('out').style.display='block'}</script>
+</body></html>
