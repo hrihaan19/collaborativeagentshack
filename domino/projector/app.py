@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
 
 from domino.story import data as D
@@ -218,5 +218,5 @@ def readiness_eval() -> JSONResponse:
 
 
 @app.get("/favicon.ico")
-def favicon() -> JSONResponse:
-    return JSONResponse({}, status_code=204)
+def favicon() -> Response:
+    return Response(status_code=204)

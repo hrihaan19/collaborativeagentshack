@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 from domino import BANNER, FLWR_VERSION, HOSPITALS, hospital_label
 from domino.coordinator.state import ACTIVE_STATES, CoordinatorState, default_state_dir
@@ -156,8 +156,8 @@ def add_page(token: str = "") -> str:
 
 
 @app.get("/favicon.ico")
-def favicon() -> JSONResponse:
-    return JSONResponse({}, status_code=204)
+def favicon() -> Response:
+    return Response(status_code=204)
 
 
 @app.get("/healthz")
