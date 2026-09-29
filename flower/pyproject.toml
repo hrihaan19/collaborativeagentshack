@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "domino"
+version = "0.1.0"
+description = "Domino: cross-hospital kidney-swap discovery with Flower Agents on SuperGrid. Synthetic data, fictional hospitals."
+license = "MIT"
+requires-python = ">=3.11,<4.0"
+dependencies = [
+    "flwr>=1.39.0,<2.0",
+    "openai>=2.16.0,<3.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["domino_app"]
+
+[tool.flwr.app]
+publisher = "domino"
+# Code only. Data stays on each Mac (~/domino-data/<hospital>).
+fab-include = ["domino_app/**/*.py"]
+
+[tool.flwr.app.components]
+agentapp = "domino_app.agent_app:app"
+
+[tool.flwr.app.config]
+phase = "search"
+unavailable = ""
+altruist = ""
+hold_until = ""
+console_port = 7800

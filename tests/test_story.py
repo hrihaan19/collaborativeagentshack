@@ -40,5 +40,7 @@ def test_timing_rule_reproduces_legs():
     assert (T("harbor", "riverbend")["out"], T("harbor", "riverbend")["arrive"]) == ("09:30", "11:00")
 
 
-def test_keyword_rules_score_is_nine_of_twelve():
-    assert D.KEYWORD_SCORE == (9, 12) and len(D.KEYWORD_TRAPS) == 3
+def test_keyword_rules_are_measured_and_have_traps():
+    ok, n, traps = D.keyword_eval()
+    assert n == 12 and ok < n and {t["pair"] for t in traps} >= {"A1"}  # Maria's "No infections" is the canonical trap
+    assert ok + len(traps) == n

@@ -42,8 +42,34 @@ READINESS = {  # pair -> (readiness, reason)
     "R4": ("not_this_week", "travel"),
     "H4": ("needs_review", "cardiac_clearance"),
 }
-KEYWORD_TRAPS = ["A1", "A2", "R3"]  # Maria "No infections", Hannah UTI June, Aisha abscess August
-KEYWORD_SCORE = (9, 12)
+_KEYWORDS = {"infection": "infection", "pneumonia": "admission", "admitted": "admission", "travel": "travel", "traveling": "travel",
+             "pending": "labs_pending", "clearance": "cardiac_clearance"}
+
+
+def keyword_rule(notes: str) -> str:
+    """The naive baseline: any keyword in the note flags the patient."""
+    low = (notes or "").lower()
+    for kw, reason in _KEYWORDS.items():
+        if kw in low:
+            return "needs_review" if reason == "cardiac_clearance" else "not_this_week"
+    return "ready"
+
+
+def keyword_eval() -> tuple[int, int, list[dict]]:
+    """MEASURED on the data in use: (correct, total, traps). Never hardcoded."""
+    import re
+
+    ok, traps = 0, []
+    for pid, p in pairs().items():
+        exp = p.get("expected_readiness", "ready")
+        got = keyword_rule(p.get("notes", ""))
+        if got == exp:
+            ok += 1
+        else:
+            m = next((kw for kw in _KEYWORDS if kw in (p.get("notes", "") or "").lower()), "")
+            frag = re.search(r"[^.]*" + re.escape(m) + r"[^.]*", p.get("notes", ""), re.I)
+            traps.append({"pair": pid, "text": f"\u201c{(frag.group(0).strip() if frag else m)}\u201d \u2192 flagged"})
+    return ok, len(pairs()), traps
 
 CONSTRAINTS = {
     "alder": {"donor_start_not_before": "07:30", "organ_arrival_by": None, "implant_start_by": None, "max_cold_ischemia_h": 12, "sensitized_cap_h": 8, "sources": ["§3.3", "§3.2"]},
@@ -71,7 +97,9 @@ _BLOOD_OK = {"O": {"O", "A", "B", "AB"}, "A": {"A", "AB"}, "B": {"B", "AB"}, "AB
 
 def pairs() -> dict[str, dict]:
     """Return the pool. Uses data/domino-data.json when present."""
-    real = Path("data/domino-data.json")
+    real = Path(__file__).resolve().parents[2] / "data" / "domino-data.json"
+    if not real.exists():
+        real = Path("data/domino-data.json")
     if real.exists():
         try:
             return _from_real(json.loads(real.read_text()))
@@ -89,6 +117,7 @@ def _from_real(d: dict) -> dict[str, dict]:
             "unacceptable": set(p["patient"].get("unacceptable_antigens", [])),
             "donor": p["donor"]["name"], "relation": p["donor"].get("relation", ""), "donor_blood": p["donor"]["blood"],
             "donor_hla": list(p["donor"].get("hla", [])), "source": "domino-data.json",
+            "notes": p["patient"].get("notes", ""), "expected_readiness": p["patient"].get("expected_readiness", "ready"),
         }
     return out
 

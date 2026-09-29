@@ -83,3 +83,13 @@ INFO:     127.0.0.1:58192 - "GET /api/state HTTP/1.1" 200 OK
 INFO:     127.0.0.1:36990 - "POST /api/beat?beat=8 HTTP/1.1" 200 OK
 INFO:     127.0.0.1:37002 - "GET /api/eval HTTP/1.1" 404 Not Found
 INFO:     127.0.0.1:37002 - "GET /api/qr HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55566 - "POST /events HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55578 - "POST /events HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48930 - "POST /events HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48942 - "POST /events HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49914 - "POST /events HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49930 - "POST /events HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55518 - "POST /events HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55532 - "POST /events HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:46042 - "POST /events HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:46046 - "POST /events HTTP/1.1" 404 Not Found
