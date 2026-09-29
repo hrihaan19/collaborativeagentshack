@@ -1,0 +1,832 @@
+From c540189ba7ebebbc1bd6a3aeab1a48c8af995dc6 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 29 Sep 2026 23:05:33 +0000
+Subject: [PATCH] Surgeon sign-in: only a signed-in transplant surgeon can
+ confirm an approval
+
+Step 3 gains a sign-in card. The coordinator bridge (127.0.0.1) checks the
+password against pods/alder/staff.json (salted PBKDF2-HMAC-SHA256, never
+leaves Mac A), sets an HttpOnly SameSite=Strict session cookie (20 min idle),
+and refuses review.confirmed unless the session is a transplant surgeon
+whose name matches the surgeon on the form's QR. The confirmed event carries
+approved_by; auth.login/failed/locked/logout lines join the run log, never a
+password. Five wrong passwords lock an account for 60 s.
+
+The page's Confirm button follows who is signed in (sign in to confirm,
+locked for the wrong role or the wrong person, otherwise Confirm approval);
+the bridge checks the same things again. REPLAY pages have no bridge, so
+their sign-in is simulated and labelled as such. Typing in the card no
+longer drives the deck; Escape closes it; R keeps the session.
+
+bridge/auth.py add|list|remove manages accounts. Seeded demo account:
+m.castillo / alder-2026 (Dr. M. Castillo, the surgeon on the forms).
+11 new offline tests, including the HTTP gate. web/dist is rebuilt by the
+launch scripts (python3 web/build.py).
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01TCfE8PpvBxPsdp1yNP8te3
+---
+ README.md              |  23 +++++-
+ bridge/auth.py         | 179 ++++++++++++++++++++++++++++++++++++++++
+ bridge/bridge.py       |  90 ++++++++++++++++++--
+ pods/alder/staff.json  |  14 ++++
+ tests/test_auth.py     | 181 +++++++++++++++++++++++++++++++++++++++++
+ web/src/projector.html | 123 +++++++++++++++++++++++++---
+ 6 files changed, 592 insertions(+), 18 deletions(-)
+ create mode 100644 bridge/auth.py
+ create mode 100644 pods/alder/staff.json
+ create mode 100644 tests/test_auth.py
+
+diff --git a/README.md b/README.md
+index 106f003..f1167c3 100644
+--- a/README.md
++++ b/README.md
+@@ -61,9 +61,26 @@ The screens are built to show agents thinking, not paragraphs of text. Each step
+ - Drop `approval-forms/approval-signed.png` on the page.
+ - The page decodes the form's QR code (jsQR) to extract its fields and locate the signature and decision boxes.
+ - It then measures the ink in those boxes and checks the request ID and candidate token against the live run.
+-- **Confirm approval** unlocks only when every check passes and the surgeon ticks the acknowledgement.
++- **Confirm approval** unlocks only when every check passes and a transplant surgeon is signed in (see [Surgeon sign-in](#surgeon-sign-in)).
+ - Two failing samples are included: `approval-unsigned.png` and `approval-wrong-candidate.png`.
+ 
++## Surgeon sign-in
++
++Only a signed-in transplant surgeon can confirm an approval, and the bridge enforces it, not just the page.
++
++- **Accounts** live in Alder's own pod, `pods/alder/staff.json`, and never leave Mac A. Passwords are stored as salted PBKDF2-HMAC-SHA256 hashes (210,000 rounds); the file holds no password.
++- **Sign in** on Step 3 opens a sign-in card. The page posts to the bridge on `127.0.0.1`, which sets an `HttpOnly`, `SameSite=Strict` session cookie. Sessions live in memory: 20 minutes idle, or until sign-out or the bridge stops. Pressing **R** keeps the session.
++- **Confirm approval** posts `review.confirmed` to the bridge. The bridge refuses it (401 or 403) unless the session belongs to a transplant surgeon whose name matches the surgeon on the form's QR code. The confirmed event is recorded with `approved_by` in `runs/*.jsonl`, next to the Flower run, together with `auth.login`, `auth.failed`, `auth.locked` and `auth.logout` lines (never a password). The Flower log (**L**) shows them too.
++- Five wrong passwords lock an account for 60 seconds.
++- **Demo account** (synthetic, change it before showing anyone): user `m.castillo`, password `alder-2026`, Dr. M. Castillo, the surgeon printed on the approval forms.
++
++```bash
++python3 bridge/auth.py add m.castillo --name "Dr. M. Castillo" --role transplant_surgeon   # prompts for a new password
++python3 bridge/auth.py list
++```
++
++- **REPLAY** (pages opened from disk): there is no bridge to check a password against, so the sign-in is simulated and labelled as such on the Step 3 pill and on the REVIEWED screen.
++
+ ## How to run the demo
+ 
+ One-time setup on every Mac. Python 3.11 and [uv](https://docs.astral.sh/uv/) are required.
+@@ -124,7 +141,7 @@ Then open <http://127.0.0.1:8767/console.html>.
+ 3. **The network:** three hospitals, three private pods. Click **Find an exchange**.
+ 4. **Step 1 · Ask:** the form flies to both SuperNodes, and each lane steps through its flowchart. Turn Macs B and C toward the judges: their consoles show the real steps inside each pod. The reply forms fill in: **Candidate found** and **No candidate found**. Riverbend widens its search.
+ 5. **Step 2 · Review:** the replies are shown as a form, followed by Alder's review in code. The map draws the reciprocal Alder ↔ Harbor Point exchange as **PROPOSED**.
+-6. **Step 3 · Doctor review:** drop the signed form. The page shows the extracted fields and passing checks. Tick the box and click **Confirm approval**. The map turns **REVIEWED**.
++6. **Step 3 · Doctor review:** drop the signed form. The page shows the extracted fields and passing checks. Click **Sign in to confirm**, sign in as the surgeon (`m.castillo`), then click **Confirm approval**. The map turns **REVIEWED**, with who approved and when.
+ 
+ ## Statistic
+ 
+@@ -132,7 +149,7 @@ Then open <http://127.0.0.1:8767/console.html>.
+ 
+ ## Development
+ 
+-- Tests (offline, no Flower needed): `uvx --python 3.11 pytest -q tests`
++- Tests (offline, no Flower needed): `uvx --python 3.11 pytest -q tests` (screening, wire, both agents, and the surgeon sign-in)
+ - Rebuild the pages: `python3 web/build.py`
+ - Record the latest run for REPLAY mode: `python3 web/build.py --record`
+ - Regenerate the approval forms: `uv run --python 3.11 --with pillow --with segno python tools/make_approval_forms.py`
+diff --git a/bridge/auth.py b/bridge/auth.py
+new file mode 100644
+index 0000000..a506674
+--- /dev/null
++++ b/bridge/auth.py
+@@ -0,0 +1,179 @@
++"""Surgeon sign-in for the coordinator bridge (Mac A).  Standard library only.
++
++Accounts live in Alder's own pod (pods/alder/staff.json) and never leave that machine.  Passwords are stored
++as salted PBKDF2-HMAC-SHA256 hashes.  Sessions live in memory: one ends when the surgeon signs out, after
++IDLE_SECONDS without a request, or when the bridge stops.
++
++    python3 bridge/auth.py add m.castillo --name "Dr. M. Castillo" --role transplant_surgeon   # prompts for a password
++    python3 bridge/auth.py list
++    python3 bridge/auth.py remove m.castillo
++"""
++from __future__ import annotations
++
++import argparse
++import getpass
++import hashlib
++import hmac
++import json
++import os
++import re
++import secrets
++import time
++from pathlib import Path
++
++ITERATIONS = 210_000
++IDLE_SECONDS = 20 * 60
++MAX_FAILURES = 5
++LOCK_SECONDS = 60
++ROLES = ("transplant_surgeon", "coordinator")
++CONFIRM_ROLE = "transplant_surgeon"  # the only role that may confirm an approval (AMC-KTP-04 §2.4)
++COOKIE = "domino_session"
++
++
++class Locked(Exception):
++    """Too many wrong passwords for this account; try again after `retry_after` seconds."""
++
++    def __init__(self, retry_after: int):
++        super().__init__(f"locked for {retry_after} s")
++        self.retry_after = retry_after
++
++
++def hash_password(password: str, salt_hex: str, iterations: int = ITERATIONS) -> str:
++    return hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), bytes.fromhex(salt_hex), iterations).hex()
++
++
++def same_person(a: str, b: str) -> bool:
++    """'Dr. M. Castillo' is 'dr m castillo': compare names ignoring case, punctuation and spacing."""
++    norm = lambda s: re.sub(r"[^a-z0-9]", "", str(s or "").casefold())  # noqa: E731
++    return bool(norm(a)) and norm(a) == norm(b)
++
++
++def public(account: dict) -> dict:
++    return {"user": account["user"], "name": account["name"], "role": account["role"]}
++
++
++class Staff:
++    """The accounts file, plus a wrong-password counter per account."""
++
++    def __init__(self, path: str | os.PathLike, iterations: int = ITERATIONS, clock=time.monotonic):
++        self.path = Path(path)
++        self.iterations, self.clock = iterations, clock
++        self.accounts: dict[str, dict] = {}
++        self.failures: dict[str, list] = {}  # user -> [wrong attempts, locked until]
++        self.load()
++
++    def load(self) -> None:
++        if self.path.exists():
++            data = json.loads(self.path.read_text(encoding="utf-8"))
++            self.accounts = {a["user"]: a for a in data.get("accounts", [])}
++        else:
++            self.accounts = {}
++
++    def save(self) -> None:
++        self.path.parent.mkdir(parents=True, exist_ok=True)
++        data = {"hospital": "alder", "synthetic": True, "accounts": list(self.accounts.values())}
++        self.path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
++
++    def add(self, user: str, name: str, role: str, password: str) -> dict:
++        if not re.fullmatch(r"[a-z0-9._-]{2,32}", user or ""):
++            raise ValueError("user: 2 to 32 of a-z, 0-9, dot, underscore, dash")
++        if role not in ROLES:
++            raise ValueError(f"role must be one of {', '.join(ROLES)}")
++        if len(password or "") < 8:
++            raise ValueError("password: at least 8 characters")
++        if not (name or "").strip():
++            raise ValueError("name: required")
++        salt = secrets.token_hex(16)
++        self.accounts[user] = {"user": user, "name": name.strip(), "role": role, "salt": salt,
++                               "iterations": self.iterations, "hash": hash_password(password, salt, self.iterations)}
++        self.save()
++        return public(self.accounts[user])
++
++    def remove(self, user: str) -> bool:
++        gone = self.accounts.pop(user, None) is not None
++        if gone:
++            self.save()
++        return gone
++
++    def verify(self, user: str, password: str) -> dict | None:
++        """The account's public fields if the password is right, None if not.  Raises Locked after MAX_FAILURES."""
++        user = str(user or "").strip()
++        now = self.clock()
++        count, until = self.failures.get(user, [0, 0.0])
++        if until > now:
++            raise Locked(int(until - now) + 1)
++        account = self.accounts.get(user)
++        if account:
++            ok = hmac.compare_digest(hash_password(password or "", account["salt"], account.get("iterations", self.iterations)),
++                                     account["hash"])
++        else:  # spend the same time on an unknown user, so the reply does not say which names exist
++            hash_password(password or "", "00" * 16, self.iterations)
++            ok = False
++        if ok:
++            self.failures.pop(user, None)
++            return public(account)
++        count += 1
++        if count >= MAX_FAILURES:
++            self.failures[user] = [0, now + LOCK_SECONDS]
++            raise Locked(LOCK_SECONDS)
++        self.failures[user] = [count, 0.0]
++        return None
++
++
++class Sessions:
++    """Signed-in surgeons, by opaque token.  Idle sessions expire; every request extends the one it carries."""
++
++    def __init__(self, idle_seconds: int = IDLE_SECONDS, clock=time.monotonic):
++        self.idle, self.clock = idle_seconds, clock
++        self.live: dict[str, dict] = {}
++
++    def issue(self, account: dict) -> str:
++        token = secrets.token_urlsafe(32)
++        self.live[token] = {**public(account), "expires": self.clock() + self.idle}
++        return token
++
++    def get(self, token: str | None) -> dict | None:
++        session = self.live.get(token or "")
++        if not session:
++            return None
++        if session["expires"] <= self.clock():
++            self.live.pop(token, None)
++            return None
++        session["expires"] = self.clock() + self.idle
++        return public(session)
++
++    def revoke(self, token: str | None) -> None:
++        self.live.pop(token or "", None)
++
++
++def main() -> None:
++    root = Path(__file__).resolve().parents[1]
++    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
++    p.add_argument("--staff", default=str(root / "pods" / "alder" / "staff.json"), help="accounts file (default: pods/alder/staff.json)")
++    sub = p.add_subparsers(dest="cmd", required=True)
++    a = sub.add_parser("add", help="add or replace an account; the password is prompted for, or read from $DOMINO_PASSWORD")
++    a.add_argument("user")
++    a.add_argument("--name", required=True, help='as printed on the approval form, e.g. "Dr. M. Castillo"')
++    a.add_argument("--role", default=CONFIRM_ROLE, choices=ROLES)
++    sub.add_parser("list", help="show the accounts (never the hashes)")
++    r = sub.add_parser("remove")
++    r.add_argument("user")
++    args = p.parse_args()
++    staff = Staff(args.staff)
++    if args.cmd == "add":
++        password = os.environ.get("DOMINO_PASSWORD") or getpass.getpass("Password (8+ characters): ")
++        if not os.environ.get("DOMINO_PASSWORD") and getpass.getpass("Again: ") != password:
++            raise SystemExit("passwords differ")
++        account = staff.add(args.user, args.name, args.role, password)
++        print(f"saved {account['user']} · {account['name']} · {account['role']} → {staff.path}")
++    elif args.cmd == "list":
++        for acc in staff.accounts.values():
++            print(f"{acc['user']:<16} {acc['role']:<20} {acc['name']}")
++        if not staff.accounts:
++            print(f"no accounts in {staff.path}")
++    elif args.cmd == "remove":
++        print("removed" if staff.remove(args.user) else "no such user")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/bridge/bridge.py b/bridge/bridge.py
+index 07c21d2..09026ad 100644
+--- a/bridge/bridge.py
++++ b/bridge/bridge.py
+@@ -7,6 +7,9 @@
+ 
+ Nothing here talks to another machine.  Between hospitals, the only channel is Flower.
+ 
++The coordinator bridge also signs the surgeon in (bridge/auth.py): a `review.confirmed` event is accepted
++only from a signed-in transplant surgeon whose name matches the one on the approval form.
++
+     python3 bridge/bridge.py coordinator --port 8765
+     python3 bridge/bridge.py hospital --hospital harbor --port 8766
+ """
+@@ -23,6 +26,8 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+ from pathlib import Path
+ from urllib.parse import parse_qs, urlparse
+ 
++import auth
++
+ ROOT = Path(__file__).resolve().parents[1]
+ WEB = ROOT / "web" / "dist"
+ RUNS = ROOT / "runs"
+@@ -54,7 +59,7 @@ class Bus:
+             return self.events[seq:]
+ 
+ 
+-def make_handler(args, bus: Bus, runner):
++def make_handler(args, bus: Bus, runner, staff: auth.Staff | None = None, sessions: auth.Sessions | None = None):
+     class Handler(SimpleHTTPRequestHandler):
+         def __init__(self, *a, **k):
+             super().__init__(*a, directory=str(WEB), **k)
+@@ -72,14 +77,26 @@ def make_handler(args, bus: Bus, runner):
+             self.send_header("Cache-Control", "no-store")
+             super().end_headers()
+ 
+-        def _json(self, obj, code=200):
++        def _json(self, obj, code=200, cookie=None):
+             body = json.dumps(obj).encode()
+             self.send_response(code)
+             self.send_header("Content-Type", "application/json")
+             self.send_header("Content-Length", str(len(body)))
++            if cookie:
++                self.send_header("Set-Cookie", cookie)
+             self.end_headers()
+             self.wfile.write(body)
+ 
++        def _cookie(self) -> str | None:
++            for part in self.headers.get("Cookie", "").split(";"):
++                name, _, value = part.strip().partition("=")
++                if name == auth.COOKIE:
++                    return value
++            return None
++
++        def _session(self) -> dict | None:
++            return sessions.get(self._cookie()) if sessions else None
++
+         def do_GET(self):
+             url = urlparse(self.path)
+             if url.path == "/":
+@@ -91,6 +108,9 @@ def make_handler(args, bus: Bus, runner):
+             if url.path == "/config":
+                 return self._json({"role": args.role, "hospital": args.hospital, "live": True,
+                                    "running": runner.running if runner else False, "seq": len(bus.events)})
++            if url.path == "/auth/me" and sessions:
++                session = self._session()
++                return self._json({"signed_in": bool(session), **(session or {})})
+             if url.path == "/events":
+                 q = parse_qs(url.query)
+                 since = int(q.get("since", ["0"])[0])
+@@ -112,13 +132,62 @@ def make_handler(args, bus: Bus, runner):
+                 return self._json({"ok": True})
+             if url.path == "/start" and runner:
+                 return self._json(runner.start())
+-            if url.path == "/ui" :  # UI-only events (doctor review) recorded alongside the run
+-                event = json.loads(body)
++            if url.path == "/auth/login" and staff and sessions:
++                return self._login(body)
++            if url.path == "/auth/logout" and sessions:
++                session = self._session()
++                sessions.revoke(self._cookie())
++                if session:
++                    bus.publish({"type": "auth.logout", "who": "alder-ui", **session, "t": time.time()})
++                return self._json({"ok": True}, cookie=f"{auth.COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict")
++            if url.path == "/ui":  # UI-only events (doctor review) recorded alongside the run
++                try:
++                    event = json.loads(body)
++                except json.JSONDecodeError:
++                    return self._json({"ok": False, "error": "bad json"}, 400)
+                 event["who"] = "alder-ui"
++                if event.get("type") == "review.confirmed":
++                    return self._confirm(event)
+                 bus.publish(event)
+                 return self._json({"ok": True})
+             return self._json({"error": "not found"}, 404)
+ 
++        def _login(self, body: bytes):
++            try:
++                creds = json.loads(body)
++            except json.JSONDecodeError:
++                return self._json({"ok": False, "error": "bad json"}, 400)
++            user = str(creds.get("user", "")).strip()
++            try:
++                account = staff.verify(user, str(creds.get("password", "")))
++            except auth.Locked as lock:
++                bus.publish({"type": "auth.locked", "who": "alder-ui", "user": user, "retry_after": lock.retry_after, "t": time.time()})
++                return self._json({"ok": False, "error": f"Too many attempts. Try again in {lock.retry_after} s.",
++                                   "retry_after": lock.retry_after}, 423)
++            if not account:
++                bus.publish({"type": "auth.failed", "who": "alder-ui", "user": user, "t": time.time()})
++                return self._json({"ok": False, "error": "Wrong user or password."}, 401)
++            token = sessions.issue(account)
++            bus.publish({"type": "auth.login", "who": "alder-ui", **account, "t": time.time()})
++            return self._json({"ok": True, **account, "idle_seconds": sessions.idle},
++                              cookie=f"{auth.COOKIE}={token}; Path=/; HttpOnly; SameSite=Strict")
++
++        def _confirm(self, event: dict):
++            """A surgeon confirms an approval.  The page locks its button too, but this is the gate that counts."""
++            session = self._session()
++            if not session:
++                return self._json({"ok": False, "auth": "required", "error": "Sign in as the transplant surgeon to confirm."}, 401)
++            if session["role"] != auth.CONFIRM_ROLE:
++                return self._json({"ok": False, "auth": "role", "error": f"{session['name']} is signed in as "
++                                   f"{session['role'].replace('_', ' ')}. Only a transplant surgeon can confirm."}, 403)
++            signer = str(event.get("surgeon", "") or "")
++            if signer and not auth.same_person(signer, session["name"]):
++                return self._json({"ok": False, "auth": "mismatch",
++                                   "error": f"The form is signed by {signer}, but {session['name']} is signed in."}, 403)
++            event["approved_by"] = session
++            bus.publish(event)
++            return self._json({"ok": True, "approved_by": session})
++
+     return Handler
+ 
+ 
+@@ -168,6 +237,8 @@ def main():
+     p.add_argument("--alder-pod", default=str(ROOT / "pods" / "alder"))
+     p.add_argument("--request-id", default="REQ-2026-0929-A1")
+     p.add_argument("--pace", type=float, default=2.0)
++    p.add_argument("--staff", default=str(ROOT / "pods" / "alder" / "staff.json"),
++                   help="surgeon accounts (coordinator only); add one with: python3 bridge/auth.py add <user> --name ...")
+     args = p.parse_args()
+     if args.role == "coordinator":
+         args.hospital = "alder"
+@@ -175,7 +246,16 @@ def main():
+ 
+     bus = Bus(args.hospital)
+     runner = Runner(args, bus) if args.role == "coordinator" else None
+-    server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(args, bus, runner))
++    staff = sessions = None
++    if args.role == "coordinator":
++        staff, sessions = auth.Staff(args.staff), auth.Sessions()
++        surgeons = [a["user"] for a in staff.accounts.values() if a["role"] == auth.CONFIRM_ROLE]
++        if surgeons:
++            print(f"Surgeon sign-in: {', '.join(surgeons)} ({staff.path})", flush=True)
++        else:
++            print(f"WARNING: no transplant surgeon in {staff.path}; nobody can confirm an approval. "
++                  f"Add one: python3 bridge/auth.py add m.castillo --name 'Dr. M. Castillo'", flush=True)
++    server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(args, bus, runner, staff, sessions))
+     page = "projector.html" if args.role == "coordinator" else "console.html"
+     print(f"Domino {args.role} bridge ({args.hospital}) → http://127.0.0.1:{args.port}/{page}", flush=True)
+     try:
+diff --git a/pods/alder/staff.json b/pods/alder/staff.json
+new file mode 100644
+index 0000000..70ecd96
+--- /dev/null
++++ b/pods/alder/staff.json
+@@ -0,0 +1,14 @@
++{
++  "hospital": "alder",
++  "synthetic": true,
++  "accounts": [
++    {
++      "user": "m.castillo",
++      "name": "Dr. M. Castillo",
++      "role": "transplant_surgeon",
++      "salt": "e3efbf8507f5f30d23e81064d21f89d7",
++      "iterations": 210000,
++      "hash": "52865c9b6f1ab2a9476e26a47f94d00f8037e04a9147b1f5af0b8ed2c788cb92"
++    }
++  ]
++}
+diff --git a/tests/test_auth.py b/tests/test_auth.py
+new file mode 100644
+index 0000000..9a095f2
+--- /dev/null
++++ b/tests/test_auth.py
+@@ -0,0 +1,181 @@
++"""Offline tests for the surgeon sign-in: the password store, lockout, sessions, and the bridge's gate on /ui."""
++import http.client
++import json
++import sys
++import threading
++import types
++from pathlib import Path
++
++import pytest
++
++ROOT = Path(__file__).resolve().parents[1]
++sys.path.insert(0, str(ROOT / "bridge"))
++
++import auth  # noqa: E402
++import bridge  # noqa: E402
++
++FAST = 1000  # PBKDF2 rounds for tests; the real store uses auth.ITERATIONS
++CONFIRM = {"type": "review.confirmed", "request_id": "REQ-2026-0929-A1", "candidate_token": "HP-39AEF0", "surgeon": "Dr. M. Castillo"}
++
++
++class Clock:
++    def __init__(self):
++        self.t = 1000.0
++
++    def __call__(self):
++        return self.t
++
++
++@pytest.fixture
++def staff(tmp_path):
++    s = auth.Staff(tmp_path / "staff.json", iterations=FAST, clock=Clock())
++    s.add("m.castillo", "Dr. M. Castillo", "transplant_surgeon", "alder-2026")
++    return s
++
++
++def test_password_roundtrip(staff):
++    assert staff.verify("m.castillo", "alder-2026") == {"user": "m.castillo", "name": "Dr. M. Castillo", "role": "transplant_surgeon"}
++    assert staff.verify("m.castillo", "wrong") is None
++    assert staff.verify("nobody", "alder-2026") is None
++    assert staff.verify("", "") is None
++
++
++def test_file_holds_hashes_not_passwords(staff):
++    text = staff.path.read_text()
++    assert "alder-2026" not in text and '"hash"' in text and '"salt"' in text
++    again = auth.Staff(staff.path, iterations=FAST)  # reloads from disk
++    assert again.verify("m.castillo", "alder-2026")
++
++
++def test_add_validates(staff):
++    with pytest.raises(ValueError):
++        staff.add("Dr Castillo", "x", "transplant_surgeon", "alder-2026")  # bad user name
++    with pytest.raises(ValueError):
++        staff.add("a.b", "x", "janitor", "alder-2026")  # unknown role
++    with pytest.raises(ValueError):
++        staff.add("a.b", "x", "transplant_surgeon", "short")  # short password
++    assert staff.remove("m.castillo") and not staff.remove("m.castillo")
++
++
++def test_lockout_after_five_wrong_passwords(staff):
++    for _ in range(4):
++        assert staff.verify("m.castillo", "wrong") is None
++    with pytest.raises(auth.Locked) as lock:
++        staff.verify("m.castillo", "wrong")
++    assert lock.value.retry_after == auth.LOCK_SECONDS
++    with pytest.raises(auth.Locked):
++        staff.verify("m.castillo", "alder-2026")  # right password, still locked
++    staff.clock.t += auth.LOCK_SECONDS + 1
++    assert staff.verify("m.castillo", "alder-2026")
++
++
++def test_sessions_idle_out_and_revoke():
++    clock = Clock()
++    s = auth.Sessions(idle_seconds=60, clock=clock)
++    tok = s.issue({"user": "u", "name": "N", "role": "transplant_surgeon", "salt": "x", "hash": "y"})
++    assert s.get(tok) == {"user": "u", "name": "N", "role": "transplant_surgeon"}  # no salt or hash in a session
++    clock.t += 59
++    assert s.get(tok)  # a request inside the idle window keeps it alive
++    clock.t += 61
++    assert s.get(tok) is None
++    tok2 = s.issue({"user": "u", "name": "N", "role": "transplant_surgeon"})
++    s.revoke(tok2)
++    assert s.get(tok2) is None and s.get(None) is None and s.get("nope") is None
++
++
++def test_same_person():
++    assert auth.same_person("Dr. M. Castillo", "dr m castillo")
++    assert not auth.same_person("Dr. M. Castillo", "Dr. A. Reyes")
++    assert not auth.same_person("", "")
++
++
++# ---- the bridge's gate, over HTTP on an ephemeral port ----
++@pytest.fixture
++def server(tmp_path, monkeypatch):
++    monkeypatch.setattr(bridge, "RUNS", tmp_path / "runs")
++    staff = auth.Staff(tmp_path / "staff.json", iterations=FAST)
++    staff.add("m.castillo", "Dr. M. Castillo", "transplant_surgeon", "alder-2026")
++    staff.add("j.ortiz", "J. Ortiz", "coordinator", "alder-2026")
++    bus = bridge.Bus("test")
++    args = types.SimpleNamespace(role="coordinator", hospital="alder")
++    srv = bridge.ThreadingHTTPServer(("127.0.0.1", 0), bridge.make_handler(args, bus, None, staff, auth.Sessions()))
++    threading.Thread(target=srv.serve_forever, daemon=True).start()
++    yield srv, bus
++    srv.shutdown()
++    srv.server_close()
++
++
++def call(srv, method, path, body=None, cookie=None):
++    c = http.client.HTTPConnection("127.0.0.1", srv.server_address[1], timeout=5)
++    headers = {"Content-Type": "application/json"}
++    if cookie:
++        headers["Cookie"] = cookie
++    c.request(method, path, body=json.dumps(body) if body is not None else None, headers=headers)
++    r = c.getresponse()
++    data, set_cookie = json.loads(r.read()), r.getheader("Set-Cookie")
++    c.close()
++    return r.status, data, set_cookie
++
++
++def login(srv, user, password):
++    status, data, cookie = call(srv, "POST", "/auth/login", {"user": user, "password": password})
++    return status, data, (cookie.split(";")[0] if cookie else None)
++
++
++def test_confirm_requires_sign_in(server):
++    srv, bus = server
++    status, data, _ = call(srv, "POST", "/ui", CONFIRM)
++    assert status == 401 and data["auth"] == "required"
++    status, me, _ = call(srv, "GET", "/auth/me")
++    assert not me["signed_in"]
++    assert not [e for e in bus.events if e["type"] == "review.confirmed"]
++
++
++def test_sign_in_confirm_sign_out(server):
++    srv, bus = server
++    status, data, tok = login(srv, "m.castillo", "nope")
++    assert status == 401 and tok is None
++    status, data, cookie = call(srv, "POST", "/auth/login", {"user": "m.castillo", "password": "alder-2026"})
++    assert status == 200 and data["name"] == "Dr. M. Castillo" and "HttpOnly" in cookie and "SameSite=Strict" in cookie
++    tok = cookie.split(";")[0]
++    status, me, _ = call(srv, "GET", "/auth/me", cookie=tok)
++    assert me == {"signed_in": True, "user": "m.castillo", "name": "Dr. M. Castillo", "role": "transplant_surgeon"}
++    status, data, _ = call(srv, "POST", "/ui", CONFIRM, cookie=tok)
++    assert status == 200 and data["approved_by"]["user"] == "m.castillo"
++    ev = next(e for e in bus.events if e["type"] == "review.confirmed")
++    assert ev["approved_by"] == {"user": "m.castillo", "name": "Dr. M. Castillo", "role": "transplant_surgeon"} and ev["who"] == "alder-ui"
++    kinds = [e["type"] for e in bus.events]
++    assert "auth.failed" in kinds and "auth.login" in kinds
++    recorded = json.dumps(bus.events)
++    assert "nope" not in recorded and "alder-2026" not in recorded  # never a password in the run log
++    status, data, cleared = call(srv, "POST", "/auth/logout", {}, cookie=tok)
++    assert status == 200 and "Max-Age=0" in cleared
++    status, data, _ = call(srv, "POST", "/ui", CONFIRM, cookie=tok)
++    assert status == 401
++    assert [e["type"] for e in bus.events][-1] == "auth.logout"
++
++
++def test_only_a_surgeon_and_only_the_one_who_signed(server):
++    srv, bus = server
++    _, _, tok = login(srv, "j.ortiz", "alder-2026")
++    status, data, _ = call(srv, "POST", "/ui", CONFIRM, cookie=tok)
++    assert status == 403 and data["auth"] == "role"
++    _, _, tok = login(srv, "m.castillo", "alder-2026")
++    status, data, _ = call(srv, "POST", "/ui", {**CONFIRM, "surgeon": "Dr. A. Reyes"}, cookie=tok)
++    assert status == 403 and data["auth"] == "mismatch"
++    assert not [e for e in bus.events if e["type"] == "review.confirmed"]
++
++
++def test_lockout_over_http(server):
++    srv, bus = server
++    for _ in range(4):
++        assert login(srv, "m.castillo", "x")[0] == 401
++    status, data, _ = login(srv, "m.castillo", "x")
++    assert status == 423 and data["retry_after"] > 0
++    assert [e["type"] for e in bus.events][-1] == "auth.locked"
++
++
++def test_other_ui_events_still_pass(server):
++    srv, bus = server
++    status, data, _ = call(srv, "POST", "/ui", {"type": "form.dropped", "t": 0})
++    assert status == 200 and bus.events[-1]["type"] == "form.dropped"
+diff --git a/web/src/projector.html b/web/src/projector.html
+index e15086b..e799f24 100644
+--- a/web/src/projector.html
++++ b/web/src/projector.html
+@@ -139,6 +139,21 @@ td.t { color: #0E7C61 !important; font-weight: 700; } td.f { color: #B45309 !imp
+ .panel { background: #fff; color: var(--body); border-radius: 6px; padding: 24px 30px; width: 1300px; max-height: 860px; overflow: auto; }
+ .panel h2 { margin: 0 0 10px; color: var(--heading); font-weight: 500; }
+ .log { font-family: var(--font-mono); font-size: 13px; line-height: 1.5; white-space: pre-wrap; color: #333; }
++
++/* Beat 5 · surgeon sign-in */
++.who { position: absolute; right: 60px; top: 30px; display: flex; align-items: center; gap: 12px; }
++.who .pill { font-size: 15px; padding: 7px 12px; color: var(--tint); }
++.who .pill b { color: #fff; }
++.who .btn { padding: 8px 14px; font-size: 15px; }
++.panel.signin { width: 560px; padding: 28px 34px; }
++.signin .sub { font-size: 14px; color: #5b6b82; margin: -4px 0 14px; line-height: 1.4; }
++.signin label { display: block; font-size: 13px; font-weight: 700; color: #5b6b82; letter-spacing: .04em; text-transform: uppercase; margin-top: 12px; }
++.signin input { width: 100%; font: 18px var(--font); padding: 10px 12px; border: 2px solid var(--divider); border-radius: 4px; margin-top: 6px; color: var(--body); background: #fff; }
++.signin input:focus { outline: none; border-color: var(--blue); }
++.signin .err { min-height: 22px; margin-top: 10px; color: #B3261E; font-weight: 700; font-size: 15px; }
++.signin .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 14px; }
++.signin .fine { font-size: 12px; color: #6b778c; max-width: 260px; line-height: 1.35; }
++.signin .btn.secondary { color: var(--heading); }
+ </style>
+ </head>
+ <body>
+@@ -213,6 +228,7 @@ td.t { color: #0E7C61 !important; font-weight: 700; } td.f { color: #B45309 !imp
+ 
+     <section class="beat" id="b5">
+       <div class="head"><div class="eyebrow">Step 3 · Doctor review</div><h1 class="display">A surgeon signs. A person confirms.</h1></div>
++      <div class="who" id="who"></div>
+       <div class="drop" id="drop">
+         <div class="hint">
+           <svg width="72" height="72" viewBox="0 0 72 72" aria-hidden="true"><rect x="14" y="8" width="44" height="56" rx="3" fill="none" stroke="#C4E4F7" stroke-width="2.5"/><path d="M22 22h28M22 30h28M22 38h16" stroke="#C4E4F7" stroke-width="2"/><path d="M22 52c5-7 8-8 10-4s4 4 7-1 5-5 7 0" fill="none" stroke="#F2B632" stroke-width="3" stroke-linecap="round"/></svg>
+@@ -238,6 +254,14 @@ td.t { color: #0E7C61 !important; font-weight: 700; } td.f { color: #B45309 !imp
+     <span class="navbtns"><button class="btn outline" id="logBtn">Flower log</button><button class="btn outline" id="backBtn">← Back</button><button class="btn" id="nextBtn">Next →</button></span>
+   </div>
+   <div class="overlay" id="logOverlay"><div class="panel"><h2>Flower run log</h2><div class="log" id="log"></div></div></div>
++  <div class="overlay" id="signOverlay"><form class="panel signin" id="signForm" autocomplete="off">
++    <h2>Surgeon sign-in</h2>
++    <div class="sub" id="signSub">Alder Medical Center staff directory, on this Mac. The password is checked here and never leaves it.</div>
++    <label for="signUser">User</label><input id="signUser" name="user" autocomplete="username" spellcheck="false" autocapitalize="off">
++    <label for="signPass">Password</label><input id="signPass" name="password" type="password" autocomplete="current-password">
++    <div class="err" id="signErr" aria-live="polite"></div>
++    <div class="row"><span class="fine">Only a signed-in transplant surgeon can confirm an approval (AMC-KTP-04 §2.4).</span><span><button type="button" class="btn secondary" id="signCancel">Cancel</button> <button type="submit" class="btn" id="signGo">Sign in</button></span></div>
++  </form></div>
+ </div>
+ 
+ <script>/*@JSQR@*/</script>
+@@ -262,7 +286,7 @@ $('flowerLbl').insertAdjacentHTML('afterbegin', Think.FLOWER);
+ 
+ // ---------------- State ----------------
+ const S = { beat: 0, step: 0, runId: null, nodes: {}, replies: {}, review: null, proposed: false, reviewed: null,
+-  started: false, log: new Think.Log(), runs: {} };
++  started: false, log: new Think.Log(), runs: {}, auth: null, pendingForm: null };
+ const POD = c => `<svg width="22" height="26" viewBox="0 0 22 26"><ellipse cx="11" cy="5" rx="9" ry="3.5" fill="none" stroke="${c}" stroke-width="2"/><path d="M2 5v15c0 2 4 3.5 9 3.5s9-1.5 9-3.5V5" fill="none" stroke="${c}" stroke-width="2"/><path d="M2 12.5c0 2 4 3.5 9 3.5s9-1.5 9-3.5" fill="none" stroke="${c}" stroke-width="2"/></svg>`;
+ 
+ function badge() {
+@@ -537,23 +561,101 @@ async function playEvidence(R, src) {
+ async function finishEvidence(R, host, pass, lines, f) {
+   await Think.reason(R, host, lines);
+   await R.wait(300);
+-  host.appendChild(Think.hero(pass
+-    ? { title: 'Confirm approval', sub: `${f.surgeon} · Proposed → Reviewed`, onClick: e => confirmApproval(e.currentTarget, f) }
+-    : { title: 'Approval locked', sub: 'Fix the form and drop it again', disabled: true }));
++  S.pendingForm = pass ? f : null;
++  const slot = document.createElement('div');
++  slot.id = 'confirmSlot';
++  host.appendChild(slot);
++  if (!pass) { slot.appendChild(Think.hero({ title: 'Approval locked', sub: 'Fix the form and drop it again', disabled: true })); return; }
++  renderConfirm();
++}
++/* The confirm button follows who is signed in.  The bridge checks the same things again before it records anything. */
++function renderConfirm() {
++  const slot = $('confirmSlot'), f = S.pendingForm, a = S.auth;
++  if (!slot || !f || S.reviewed) return;
++  slot.innerHTML = '';
++  const role = a ? a.role.replace('_', ' ') : '';
++  const spec = !a ? { title: 'Sign in to confirm', sub: `Form signed by ${f.surgeon} · only the transplant surgeon can confirm`, onClick: () => openSignIn() }
++    : a.role !== 'transplant_surgeon' ? { title: 'Approval locked', sub: `${a.name} is signed in as ${role}. A transplant surgeon must confirm.`, disabled: true }
++    : !a.simulated && !samePerson(a.name, f.surgeon) ? { title: 'Approval locked', sub: `The form is signed by ${f.surgeon}, but ${a.name} is signed in.`, disabled: true }
++    : { title: 'Confirm approval', sub: `${a.name}${a.simulated ? ' · simulated sign-in' : ''} · Proposed → Reviewed`, onClick: e => confirmApproval(e.currentTarget, f) };
++  slot.appendChild(Think.hero(spec));
+ }
+-function confirmApproval(btn, f) {
++async function confirmApproval(btn, f) {
+   if (S.reviewed) return;
+   btn.disabled = true;
++  const r = await Source.post('/ui', { type: 'review.confirmed', request_id: f.request_id, candidate_token: f.candidate_token, surgeon: f.surgeon, t: Date.now() / 1000 });
++  if (!r.ok && !r.offline) {  // the bridge refused: the session is gone, or it is not the surgeon on the form
++    btn.disabled = false;
++    if (r.auth === 'required') { S.auth = null; renderWho(); openSignIn(); }
++    else btn.querySelector('.hs').textContent = r.error || 'Not confirmed.';
++    return;
++  }
+   btn.classList.add('done');
+   btn.querySelector('.ht').textContent = 'Approved';
+-  S.reviewed = { at: new Date().toTimeString().slice(0, 5), surgeon: f.surgeon, request_id: f.request_id, token: f.candidate_token };
+-  Source.post('/ui', { type: 'review.confirmed', request_id: f.request_id, candidate_token: f.candidate_token, t: Date.now() / 1000 });
++  S.reviewed = { at: new Date().toTimeString().slice(0, 5), surgeon: f.surgeon, request_id: f.request_id, token: f.candidate_token,
++    by: r.approved_by || S.auth, simulated: !!r.offline };
+   setTimeout(() => show(6), REDUCED ? 0 : 1200);
+ }
+ function renderDone() {
+   const r = S.reviewed, p = S.review?.proposal;
+-  $('legs').innerHTML = r && p ? `Elena → <span class="mono">${esc(p.candidate_token)}</span><br><span class="mono">${esc(p.candidate_token)}</span>'s donor → Maria<br><span style="color:var(--tint); font-size:18px">${esc(r.surgeon)} · ${r.at}</span>` : '';
++  const by = r ? `Approved by ${esc(r.by?.name || r.surgeon)}${r.by?.user ? ` (${esc(r.by.user)})` : ''} · ${r.at}${r.simulated ? ' · simulated sign-in (replay)' : ''}` : '';
++  $('legs').innerHTML = r && p ? `Elena → <span class="mono">${esc(p.candidate_token)}</span><br><span class="mono">${esc(p.candidate_token)}</span>'s donor → Maria<br><span style="color:var(--tint); font-size:18px">${by}</span>` : '';
++}
++
++// ---------------- Surgeon sign-in ----------------
++const samePerson = (x, y) => { const n = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, ''); return !!n(x) && n(x) === n(y); };
++function renderWho() {
++  const a = S.auth, el = $('who');
++  el.innerHTML = a
++    ? `<span class="pill"><span class="dot on"></span><b>${esc(a.name)}</b>&nbsp;· ${esc(a.role.replace('_', ' '))}${a.simulated ? ' · simulated' : ''}</span><button type="button" class="btn outline" id="signOut">Sign out</button>`
++    : `<span class="pill"><span class="dot"></span>No surgeon signed in</span><button type="button" class="btn" id="signIn">Sign in</button>`;
++  $('signIn')?.addEventListener('click', () => openSignIn());
++  $('signOut')?.addEventListener('click', signOut);
++  renderConfirm();
+ }
++function openSignIn() {
++  $('signErr').textContent = '';
++  $('signSub').textContent = Source.live
++    ? 'Alder Medical Center staff directory, on this Mac. The password is checked here and never leaves it.'
++    : 'REPLAY: this page has no bridge to check a password against, so the sign-in is simulated and labelled as such.';
++  $('signOverlay').classList.add('on');
++  $('signUser').focus();
++}
++function closeSignIn() { $('signOverlay').classList.remove('on'); $('signPass').value = ''; }
++async function signIn(user, password) {
++  user = user.trim();
++  if (!user) return 'Enter a user name.';
++  if (!Source.live) { S.auth = { user, name: user, role: 'transplant_surgeon', simulated: true }; renderWho(); return null; }
++  const r = await Source.post('/auth/login', { user, password });
++  if (!r.ok) return r.error || 'Could not sign in.';
++  S.auth = { user: r.user, name: r.name, role: r.role };
++  renderWho();
++  return null;
++}
++async function signOut() {
++  if (Source.live) await Source.post('/auth/logout');
++  S.auth = null;
++  renderWho();
++}
++async function restoreSession() {  // the bridge remembers a sign-in across a page reload (R) until it idles out
++  if (!Source.live) return;
++  try {
++    const r = await (await fetch('/auth/me', { cache: 'no-store' })).json();
++    S.auth = r.signed_in ? { user: r.user, name: r.name, role: r.role } : null;
++  } catch { S.auth = null; }
++  renderWho();
++}
++$('signForm').onsubmit = async e => {
++  e.preventDefault();
++  const go = $('signGo');
++  go.disabled = true;
++  const err = await signIn($('signUser').value, $('signPass').value);
++  go.disabled = false;
++  if (err) { $('signErr').textContent = err; $('signPass').select(); return; }
++  closeSignIn();
++};
++$('signCancel').onclick = closeSignIn;
++$('signOverlay').onclick = e => { if (e.target.id === 'signOverlay') closeSignIn(); };
+ 
+ // ---------------- Events ----------------
+ function wire(dir, html) {
+@@ -610,7 +712,8 @@ addEventListener('drop', e => { const f = [...(e.dataTransfer?.files || [])].fin
+ addEventListener('paste', e => { const it = [...(e.clipboardData?.items || [])].find(x => x.type.startsWith('image/')); if (it) takeForm(URL.createObjectURL(it.getAsFile())); });
+ addEventListener('keydown', e => {
+   const k = e.key;
+-  if (k === 'Escape') { $('logOverlay').classList.remove('on'); return; }
++  if (k === 'Escape') { $('logOverlay').classList.remove('on'); closeSignIn(); return; }
++  if (e.target.matches('input, textarea, select')) return;
+   if (k === 'ArrowRight' || k === ' ' || k === 'PageDown') { e.preventDefault(); next(); }
+   else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); back(); }
+   else if (k === 'l' || k === 'L') $('logOverlay').classList.toggle('on');
+@@ -618,7 +721,7 @@ addEventListener('keydown', e => {
+   else if (k === 'r' || k === 'R') location.reload();
+ });
+ 
+-renderNet(); badge(); show(0, 0);
++renderNet(); badge(); show(0, 0); renderWho(); restoreSession();
+ </script>
+ </body>
+ </html>
+-- 
+2.43.0
+
