@@ -65,22 +65,25 @@ class Coordinator:
         round_id = f"{mtype.value.lower()}-{uuid.uuid4().hex[:8]}"
         nodes = node_ids if node_ids is not None else self._nodes()
         msgs: list[Message] = []
-        sent: dict[str, dict] = {}
+        sent: dict[int, CoordinatorRequest] = {}
         for nid in nodes:
             req: CoordinatorRequest = req_for_node(nid)
             req.run_id, req.round_id, req.message_type = self.run_id, round_id, mtype
             content = RecordDict({RECORD_KEY: ConfigRecord({PAYLOAD_KEY: dumps(req)})})
             m = self.grid.create_message(content=content, message_type="query", dst_node_id=nid, group_id=round_id, ttl=self.timeout)
             msgs.append(m)
-            sent[m.metadata.message_id] = {"domino_message_id": req.message_id, "dst_node_id": nid}
+            sent[nid] = req
+        t0 = time.time()
+        msg_ids = list(self.grid.push_messages(msgs))
+        for m, mid in zip(msgs, msg_ids):
+            req = sent[m.metadata.dst_node_id]
             self.state.audit({
                 "direction": "coordinator->hospital", "message_type": mtype.value, "round_id": round_id,
-                "flower_run_id": m.metadata.run_id, "flower_message_id": m.metadata.message_id,
-                "src_node_id": m.metadata.src_node_id, "dst_node_id": nid, "domino_message_id": req.message_id,
+                "flower_run_id": m.metadata.run_id, "flower_message_id": mid,
+                "src_node_id": m.metadata.src_node_id, "dst_node_id": m.metadata.dst_node_id, "domino_message_id": req.message_id,
                 "payload": req.model_dump(mode="json", exclude_none=True),
             })
-        t0 = time.time()
-        replies = list(self.grid.send_and_receive(msgs, timeout=self.timeout))
+        replies = self._pull_all(msg_ids)
         out: dict[str, HospitalEgress] = {}
         for r in replies:
             md = r.metadata
@@ -121,6 +124,17 @@ class Coordinator:
                                       "missing_nodes": missing, "at": now_iso(), "elapsed_s": round(time.time() - t0, 2)}
         self.state.event(st, "FLOWER_ROUND", st["flower"]["last_round"])
         return out
+
+    def _pull_all(self, msg_ids: list[str]) -> list[Message]:
+        """Pull replies until all arrived or the round timeout elapses."""
+        pending, got, t_end = set(msg_ids), [], time.time() + self.timeout
+        while pending and time.time() < t_end:
+            for r in self.grid.pull_messages(list(pending)):
+                got.append(r)
+                pending.discard(r.metadata.reply_to_message_id)
+            if pending:
+                time.sleep(0.5)
+        return got
 
     # -------------------------------------------------------------- actions
     def screen(self, st: dict) -> None:
@@ -183,6 +197,7 @@ class Coordinator:
             self.state.save(st)
             return
         verts = st["graph"]["vertices"]
+        # 1) a clinician HOLD on any involved vertex kills the plan immediately
         for tok in p["order"]:
             v = verts.get(tok, {})
             if v.get("availability") == "HOLD":
@@ -190,19 +205,25 @@ class Coordinator:
                 self.state.save(st)
                 self.state.enqueue("SCREEN", {"reason": f"re-solve after HOLD on {tok}"})
                 return
-            if v.get("record_version") != p["record_versions"].get(tok):
-                self.state.invalidate(st, "RECORD_CHANGED", {"vertex": tok, "hospital_id": v.get("hospital_id")})
-                self.state.save(st)
-                self.state.enqueue("SCREEN", {"reason": f"re-solve after record change on {tok}"})
-                return
+        # 2) REVIEW_REQUIRED parks the plan: approvals are void, nothing proceeds
+        #    until that hospital's clinician decides (HOLD, or mark reviewed).
         review = [t for t in p["order"] if verts.get(t, {}).get("availability") == "REVIEW_REQUIRED"]
         if review:
             if p["state"] != "REVIEW_PENDING":
                 p["state"] = "REVIEW_PENDING"
                 p["approvals"] = {}
-                self.state.event(st, "PLAN_REVIEW_PENDING", {"plan_id": p["plan_id"], "vertices": review})
+                self.state.event(st, "PLAN_REVIEW_PENDING", {"plan_id": p["plan_id"], "vertices": review,
+                                                             "hospitals": sorted({verts[t]["hospital_id"] for t in review})})
             self.state.save(st)
             return
+        # 3) any record change on an AVAILABLE involved vertex invalidates -> re-solve
+        for tok in p["order"]:
+            v = verts.get(tok, {})
+            if v.get("record_version") != p["record_versions"].get(tok):
+                self.state.invalidate(st, "RECORD_CHANGED", {"vertex": tok, "hospital_id": v.get("hospital_id")})
+                self.state.save(st)
+                self.state.enqueue("SCREEN", {"reason": f"re-solve after record change on {tok}"})
+                return
         if p["state"] == "REVIEW_PENDING":
             p["state"] = "AWAITING_APPROVALS"
             self.state.event(st, "PLAN_REVIEW_CLEARED", {"plan_id": p["plan_id"]})

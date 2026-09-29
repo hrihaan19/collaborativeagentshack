@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Domino coordinator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{--bg:#0d1117;--fg:#e6edf3;--mut:#8b949e;--card:#161b22;--line:#30363d;--ok:#3fb950;--warn:#d29922;--bad:#f85149;--acc:#58a6ff;--plan:#f0b429}
+*{box-sizing:border-box}body{margin:0;font:15px/1.4 system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+.banner{background:#6e1a1a;color:#fff;text-align:center;padding:8px;font-weight:800;letter-spacing:.05em;font-size:16px}
+.sub{background:#1f2a3a;color:#cfe3ff;text-align:center;padding:5px;font-size:13px}
+main{max-width:1400px;margin:0 auto;padding:14px;display:grid;grid-template-columns:1.4fr 1fr;gap:14px}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+h2{margin:0 0 8px;font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em}
+.state{font-size:26px;font-weight:800}.mut{color:var(--mut);font-size:13px}.mono{font-family:ui-monospace,monospace;font-size:12px;word-break:break-all}
+button{background:#21262d;color:#fff;border:1px solid #3b434d;border-radius:8px;padding:9px 14px;cursor:pointer;font-weight:600;margin:3px}
+button.big{background:#b8860b;color:#111;font-size:18px;padding:14px 22px}button.ok{background:#1f5a38}button.warn{background:#5a3f1f}button:disabled{opacity:.35;cursor:default}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700}
+.AVAILABLE{background:#12321f;color:var(--ok)}.REVIEW_REQUIRED{background:#3a2c0a;color:var(--warn)}.HOLD{background:#4a1616;color:var(--bad)}
+.PROPOSED,.AWAITING_APPROVALS{color:var(--plan)}.REVIEW_PENDING{color:var(--warn)}.INVALIDATED,.NO_FEASIBLE_EXCHANGE{color:var(--bad)}.APPROVED_FOR_SIMULATED_COORDINATION{color:var(--ok)}
+svg{width:100%;height:auto;background:#0b0f14;border-radius:8px}
+.region{fill:#111823;stroke:#263041;stroke-width:1.5}.rlabel{fill:#8b949e;font-size:13px;font-weight:700}.rsub{fill:#5f6b7a;font-size:11px}
+.node circle{stroke-width:3;fill:#161b22}.node text{fill:#fff;font-weight:800;font-size:16px;text-anchor:middle}.node .kind{font-size:10px;fill:#8b949e;font-weight:500}
+.edge{stroke:#3b4654;stroke-width:2.5;fill:none;marker-end:url(#arrow)}
+.edge.plan{stroke:var(--plan);stroke-width:5;marker-end:url(#arrowplan);stroke-dasharray:600;stroke-dashoffset:600;opacity:0}
+.edge.plan.on{animation:draw .7s ease-out forwards}
+.edge.dead{stroke:var(--bad);stroke-dasharray:6 6;opacity:.5}
+@keyframes draw{from{stroke-dashoffset:600;opacity:1}to{stroke-dashoffset:0;opacity:1}}
+.log{max-height:260px;overflow:auto}.ev{padding:2px 0;border-bottom:1px dashed #222b36}
+.approvals td.v{color:var(--ok);font-weight:700}.approvals td.p{color:var(--warn)}
+.tag{font-size:11px;padding:1px 6px;border:1px solid var(--line);border-radius:4px;color:var(--mut)}
+</style></head><body>
+<div class="banner">SYNTHETIC DEMO — NOT A CLINICAL MATCHING TOOL</div>
+<div class="sub" id="hdr">Three hospitals · three countries · NO SHARED REGISTRY · neutral coordinator over Flower · INSECURE DEV MODE</div>
+<main>
+<section>
+ <div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+   <div><h2>Exchange plan state</h2><div class="state" id="pstate">—</div><div class="mut" id="preason"></div></div>
+   <div>
+    <button onclick="post('/api/screen')">SCREEN &amp; SOLVE via Flower</button>
+    <button onclick="post('/api/poll')">RE-QUERY HOSPITALS</button>
+    <button class="big" id="reveal" onclick="post('/api/reveal')" disabled>▶ REVEAL PLAN</button>
+   </div>
+  </div>
+ </div>
+ <div class="card">
+  <h2>Exchange graph (from backend state, never scripted) — <span id="gmeta"></span></h2>
+  <svg id="g" viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg">
+   <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3b4654"/></marker>
+    <marker id="arrowplan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f0b429"/></marker>
+   </defs>
+   <g id="regions"></g><g id="edges"></g><g id="nodes"></g>
+  </svg>
+  <div class="mut" style="margin-top:6px">Edge u→v: u's donor screened TOY_CANDIDATE for v's recipient (ABO table + fixture markers K0–K3; not HLA, not crossmatch). Grey = candidate edge. Gold = current plan (after REVEAL). Only hospitals assert edges into their own recipients.</div>
+ </div>
+ <div class="card">
+  <h2>Presenter</h2>
+  <button class="warn" onclick="post('/api/activate')">ADD A FICTIONAL DONOR (activates N0 at Hospital C via Flower)</button>
+  <a href="/qr" target="_blank"><button>Open QR page</button></a>
+  <button onclick="if(confirm('Reset coordinator state?'))post('/api/reset')">Reset coordinator</button>
+  <div class="mut" id="act"></div>
+ </div>
+</section>
+<section>
+ <div class="card"><h2>Flower federation (flwr <span id="fv"></span>)</h2><div id="flower"></div><table id="hosp"></table></div>
+ <div class="card"><h2>Plan</h2><div id="plan" class="mono"></div></div>
+ <div class="card approvals"><h2>Approval matrix (Ed25519 over the exact plan hash)</h2><table id="appr"></table></div>
+ <div class="card"><h2>State machine events</h2><div class="log mono" id="events"></div></div>
+ <div class="card"><h2>Flower message audit (sanitized; metadata + egress schema only)</h2><div class="log mono" id="audit"></div></div>
+</section>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+const POS={P1:[160,250],P2:[730,120],W4:[730,390],P3:[520,420],N0:[380,420]};
+const REG=[{id:'A',x:20,y:20,w:290,h:480,l:'Hospital A — Palo Alto, United States'},{id:'B',x:590,y:20,w:290,h:480,l:'Hospital B — Tel Aviv, Israel'},{id:'C',x:320,y:290,w:260,h:210,l:'Hospital C — Abu Dhabi, UAE'}];
+let animatedFor=null, lastPlanId=null;
+async function post(u){const r=await fetch(u,{method:'POST'});const j=await r.json().catch(()=>({}));if(!r.ok)alert(j.detail||r.status);load()}
+function pos(t,i,n){if(POS[t])return POS[t];const a=i/n*6.28;return [450+300*Math.cos(a),250+180*Math.sin(a)]}
+function edgePath(u,v,verts){const toks=Object.keys(verts);const [x1,y1]=pos(u,toks.indexOf(u),toks.length),[x2,y2]=pos(v,toks.indexOf(v),toks.length);const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy)||1;const r=34;const sx=x1+dx/L*r,sy=y1+dy/L*r,ex=x2-dx/L*(r+4),ey=y2-dy/L*(r+4);const cx=(sx+ex)/2-dy/L*40,cy=(sy+ey)/2+dx/L*40;return `M${sx},${sy} Q${cx},${cy} ${ex},${ey}`}
+function draw(s){
+ const verts=s.graph.vertices||{},edges=s.graph.edges||[],p=s.plan;
+ $('#regions').innerHTML=REG.map(r=>`<rect class="region" x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="12"/><text class="rlabel" x="${r.x+10}" y="${r.y+20}">${r.l}</text><text class="rsub" x="${r.x+10}" y="${r.y+36}">${s.hospitals[r.id].connected?'connected · node '+String(s.hospitals[r.id].node_id).slice(0,6)+'…':'not seen on Flower yet'} · agent: ${s.hospitals[r.id].agent_mode||'—'}</text>`).join('');
+ const planEdges=(p&&p.plan_id)?p.edges.map(e=>e.join('>')):[];
+ const active=p&&['PROPOSED','AWAITING_APPROVALS','REVIEW_PENDING','APPROVED_FOR_SIMULATED_COORDINATION'].includes(p.state);
+ const revealed=s.reveal&&p&&s.reveal.plan_id===p.plan_id;
+ let html=edges.map(([u,v])=>`<path class="edge" d="${edgePath(u,v,verts)}"/>`).join('');
+ if(p&&p.plan_id) html+=p.edges.map(([u,v],i)=>`<path id="pe${i}" class="edge plan ${!active?'dead':''}" d="${edgePath(u,v,verts)}"/>`).join('');
+ $('#edges').innerHTML=html;
+ const toks=Object.keys(verts);
+ $('#nodes').innerHTML=toks.map((t,i)=>{const [x,y]=pos(t,i,toks.length);const v=verts[t];const c={AVAILABLE:'#3fb950',REVIEW_REQUIRED:'#d29922',HOLD:'#f85149'}[v.availability]||'#888';return `<g class="node"><circle cx="${x}" cy="${y}" r="30" stroke="${c}"/><text x="${x}" y="${y+6}">${t}</text><text class="kind" x="${x}" y="${y+48}">${v.kind.replace('_ONLY','')} · ${v.availability} · v${v.record_version}</text></g>`}).join('');
+ if(revealed&&animatedFor!==p.plan_id&&active){animatedFor=p.plan_id;p.edges.forEach((e,i)=>setTimeout(()=>{const el=document.getElementById('pe'+i);if(el)el.classList.add('on')},i*750))}
+ else if(revealed&&animatedFor===p.plan_id){p.edges.forEach((e,i)=>{const el=document.getElementById('pe'+i);if(el){el.classList.add('on');el.style.animationDuration='0s'}})}
+}
+async function load(){
+ const s=await (await fetch('/api/state')).json();
+ $('#fv').textContent=s.flwr_version;
+ const f=s.flower;$('#flower').innerHTML=`<div><span class="pill ${f.serverapp_alive?'AVAILABLE':'HOLD'}">${f.label}</span> <span class="tag">run ${f.run_id||'—'}</span> <span class="tag">nodes ${(f.node_ids||[]).length}</span></div>${f.last_round?`<div class="mut">last round ${f.last_round.type} · sent ${f.last_round.sent} · replied ${f.last_round.replied} · ${f.last_round.elapsed_s}s · missing ${JSON.stringify(f.last_round.missing_nodes)}</div>`:''}`;
+ $('#hosp').innerHTML=Object.values(s.hospitals).map(h=>`<tr><td><b>${h.label}</b><br><span class="mut">${h.machine} · SuperNode, outbound only</span></td><td>${h.connected?'<span class="pill AVAILABLE">via Flower</span>':'<span class="pill HOLD">not seen</span>'}<br><span class="mut mono">node ${h.node_id||'—'}<br>key ${(h.public_key_hex||'').slice(0,16)}${h.public_key_hex?'…':'—'} ${h.key_mismatch?'<b style=color:#f85149>KEY MISMATCH</b>':''}</span></td></tr>`).join('');
+ const p=s.plan;
+ $('#pstate').innerHTML=p?`<span class="${p.state}">${p.state}</span>`:'IDLE — press SCREEN &amp; SOLVE';
+ $('#preason').textContent=p?(p.reason?('reason: '+p.reason):'')+(s.graph.screening?' · screening in progress…':''):'';
+ $('#gmeta').textContent=(s.graph.screened_at?'screened '+s.graph.screened_at.slice(11,19)+'Z':'no screening yet')+(s.graph.hospitals_replied?' · replied: '+s.graph.hospitals_replied.join(','):'');
+ const active=p&&['PROPOSED','AWAITING_APPROVALS','REVIEW_PENDING','APPROVED_FOR_SIMULATED_COORDINATION'].includes(p.state);
+ $('#reveal').disabled=!(active&&!(s.reveal&&s.reveal.plan_id===p.plan_id));
+ $('#plan').innerHTML=p&&p.plan_id?`${p.plan_id} · ${p.kind} · recipients ${p.recipient_count} · hospitals ${p.hospitals.join(', ')}<br>order: <b>${p.order.join(' → ')}${p.kind==='CYCLE'?' → '+p.order[0]:''}</b><br>hash ${p.hash}<br>record versions ${JSON.stringify(p.record_versions)}<br>acks ${JSON.stringify(p.acks)}${p.finalized_at?'<br><b style=color:#3fb950>APPROVED_FOR_SIMULATED_COORDINATION at '+p.finalized_at+'</b> (nothing is scheduled; this is a software state)':''}`:(p?'No feasible exchange across the three hospitals with the current readiness.':'—');
+ $('#appr').innerHTML=p&&p.plan_id?'<tr><th>Hospital</th><th>Ack</th><th>Clinician approval</th><th>Signature</th></tr>'+p.hospitals.map(h=>{const a=(p.approvals||{})[h]||{};return `<tr><td>${s.hospitals[h].label}</td><td>${p.acks[h]||'—'}</td><td class="${a.verified?'v':'p'}">${a.status||'PENDING'}</td><td class="mono">${a.verified?'VERIFIED ✓ '+a.signature_hex.slice(0,20)+'…':(a.signature_hex?'NOT VERIFIED':'—')}</td></tr>`}).join(''):'<tr><td class="mut">no plan</td></tr>';
+ $('#events').innerHTML=s.events.slice().reverse().map(e=>`<div class="ev">${e.at.slice(11,19)} <b>${e.kind}</b> ${Object.entries(e).filter(([k])=>!['at','kind'].includes(k)).map(([k,v])=>k+'='+JSON.stringify(v)).join(' ')}</div>`).join('');
+ $('#audit').innerHTML=s.audit.slice().reverse().map(a=>`<div class="ev">${a.at.slice(11,19)} ${a.direction==='coordinator->hospital'?'→':'←'} <b>${a.message_type}</b> ${a.hospital_id||''} node ${a.dst_node_id&&a.direction==='coordinator->hospital'?String(a.dst_node_id).slice(0,8):String(a.src_node_id||'').slice(0,8)} run ${String(a.flower_run_id||'').slice(0,8)} msg ${String(a.flower_message_id||'').slice(0,10)} ${a.status||''} ${a.payload&&a.payload.vertices?'vertices='+a.payload.vertices.map(v=>v.vertex_token+':'+v.availability).join(','):''}${a.payload&&a.payload.evaluations?' evals='+a.payload.evaluations.length:''}${a.payload&&a.payload.signatures&&a.payload.signatures.length?' SIGNATURE':''}</div>`).join('');
+ $('#act').textContent=s.activation.last_activation_at?('last activation '+s.activation.last_activation_at+' '+JSON.stringify(s.activation.activations.slice(-1)[0].outcome)):'N0 not activated yet';
+ draw(s);
+}
+load();setInterval(load,1000);
+</script></body></html>

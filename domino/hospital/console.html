@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Domino hospital console</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{--bg:#0f1216;--fg:#e8eaed;--mut:#9aa4b2;--card:#171b21;--line:#2a313b;--ok:#3ddc84;--warn:#ffcc4d;--bad:#ff5c5c;--acc:#5aa9ff}
+body{margin:0;font:15px/1.4 system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+.banner{background:#4a1c1c;color:#fff;text-align:center;padding:6px;font-weight:700;letter-spacing:.04em}
+.sub{background:#2a2410;color:#ffd97a;text-align:center;padding:4px;font-size:13px}
+main{max-width:1100px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:8px 0}h2{font-size:15px;color:var(--mut);margin:18px 0 8px;text-transform:uppercase;letter-spacing:.06em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px;margin:8px 0}
+.row{display:flex;gap:12px;flex-wrap:wrap}.row>.card{flex:1 1 300px}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700}
+.AVAILABLE{background:#143d2a;color:var(--ok)}.REVIEW_REQUIRED{background:#4a3d10;color:var(--warn)}.HOLD{background:#4a1c1c;color:var(--bad)}
+button{background:#22303f;color:#fff;border:1px solid #3a4a5c;border-radius:6px;padding:6px 10px;cursor:pointer;margin:2px}
+button.danger{background:#5a1f1f}button.ok{background:#1f5a38}button:disabled{opacity:.4;cursor:default}
+input,textarea{width:100%;box-sizing:border-box;background:#0f1216;color:#fff;border:1px solid var(--line);border-radius:6px;padding:6px}
+.mut{color:var(--mut);font-size:13px}.mono{font-family:ui-monospace,monospace;font-size:12px;word-break:break-all}
+ul{margin:4px 0;padding-left:18px}.log{max-height:220px;overflow:auto}
+</style></head><body>
+<div class="banner">SYNTHETIC DEMO — NOT A CLINICAL MATCHING TOOL</div>
+<div class="sub">LOCAL HOSPITAL CONSOLE · bound to 127.0.0.1 · this hospital exposes ZERO inbound ports · only an outbound Flower connection to the coordinator · INSECURE DEV MODE</div>
+<main>
+<h1 id="title">Hospital console</h1>
+<div class="mut" id="net"></div>
+<div class="row">
+ <div class="card"><b>Local-only search</b><div>Exchanges found using only this hospital's records: <b id="local">?</b></div><div class="mut">Nothing crosses the border in a local search.</div></div>
+ <div class="card"><b>Local model</b><div id="llm" class="mut"></div></div>
+</div>
+<h2>Private records (names never leave this machine)</h2>
+<div id="records" class="row"></div>
+<h2>Plans received through Flower (tokens only) — human approval gate</h2>
+<div id="plans"></div>
+<h2>Local log</h2>
+<div class="card log mono" id="log"></div>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+async function post(u,b){const r=await fetch(u,{method:'POST',headers:{'content-type':'application/json'},body:b?JSON.stringify(b):null});const j=await r.json().catch(()=>({}));if(!r.ok)alert(j.detail||r.status);load();return j}
+async function addNote(v){const t=$('#note-'+v).value.trim();if(!t)return;const j=await post('/api/note',{vertex:v,text:t});$('#note-'+v).value='';if(j.agent){alert('Rule: REVIEW_REQUIRED. Agent mode: '+j.agent.mode+(j.agent.suggest_review!=null?' (model suggests review: '+j.agent.suggest_review+', '+j.agent.reason_code+')':''))}}
+async function load(){
+ const s=await (await fetch('/api/state')).json();
+ $('#title').textContent=s.label+' — local console';
+ $('#net').textContent=s.network; $('#local').textContent=s.local_search_exchanges;
+ $('#llm').textContent=s.llm.label+(s.llm.model?' · '+s.llm.model:'');
+ $('#records').innerHTML=s.records.map(r=>`<div class="card">
+   <div><b>${r.vertex}</b> <span class="mut">${r.kind}</span> <span class="pill ${r.availability}">${r.availability}</span> <span class="mut">v${r.record_version} · agent: ${r.agent_mode}</span></div>
+   ${r.recipient?`<div>Recipient (fictional): <b>${r.recipient.name}</b> · ABO ${r.recipient.abo} · blocked fixture markers {${r.recipient.blocked.join(',')}}</div>`:'<div class="mut">no recipient (non-directed donor)</div>'}
+   ${r.donor?`<div>Donor: ${r.donor.donor_token} · ABO ${r.donor.abo} · marker ${r.donor.marker} · ${r.donor.active?'active':'<b>INACTIVE</b>'}</div>`:'<div class="mut">no paired donor (may only end a chain)</div>'}
+   <div class="mut">Notes (${r.notes.length}, reviewed ${r.reviewed_note_count}):</div><ul>${r.notes.map(n=>'<li>'+n.text.replace(/</g,'&lt;')+'</li>').join('')}</ul>
+   ${r.recipient?`<textarea id="note-${r.vertex}" rows="2" placeholder="Add a private clinician note (fictional). Rule: any new note => REVIEW_REQUIRED"></textarea>
+   <button onclick="addNote('${r.vertex}')">Add note</button>
+   ${r.hold?`<button class="ok" onclick="post('/api/clear-hold/${r.vertex}')">CLEAR HOLD (clinician)</button>`:`<button class="danger" onclick="post('/api/hold/${r.vertex}')">HOLD (clinician)</button>`}
+   ${r.availability==='REVIEW_REQUIRED'?`<button onclick="post('/api/reviewed/${r.vertex}')">Mark reviewed → AVAILABLE</button>`:''}`:''}
+   ${r.donor&&!r.donor.active?`<button class="ok" onclick="post('/api/activate/${r.donor.donor_token}')">ACTIVATE ${r.donor.donor_token} locally (fictional non-directed donor)</button>`:''}
+ </div>`).join('');
+ const plans=Object.values(s.plans).sort((a,b)=>(a.plan_id<b.plan_id?1:-1));
+ $('#plans').innerHTML=plans.length?plans.map(p=>`<div class="card">
+   <div><b>${p.plan_id}</b> · ${p.kind} · recipients ${p.recipient_count} · hospitals ${p.hospitals.join(', ')} · status <b>${p.approval}</b></div>
+   <div>Order: ${p.edges.map(e=>e.donor_vertex+'→'+e.recipient_vertex).join('  ')}</div>
+   <div class="mono">hash ${p.plan_hash}</div>
+   <div class="mut">Record versions in plan: ${Object.entries(p.record_versions).map(([k,v])=>k+':'+v).join(' ')}</div>
+   ${p.signature?`<div class="mono">signature ${p.signature.signature_hex.slice(0,32)}… signed ${p.signature.signed_at}</div>`:''}
+   <button class="ok" onclick="post('/api/approve/${p.plan_id}')" ${p.approval==='APPROVED'?'disabled':''}>APPROVE — sign exact plan hash (clinician only)</button>
+   <button class="danger" onclick="post('/api/refuse/${p.plan_id}')">REFUSE</button>
+ </div>`).join(''):'<div class="mut">No plan received yet.</div>';
+ $('#log').innerHTML=s.log.slice().reverse().map(l=>`${l.at.slice(11,19)} ${l.event} ${Object.entries(l).filter(([k])=>!['at','event','hospital_id'].includes(k)).map(([k,v])=>k+'='+JSON.stringify(v)).join(' ')}`).join('<br>');
+}
+load();setInterval(load,2000);
+</script></body></html>

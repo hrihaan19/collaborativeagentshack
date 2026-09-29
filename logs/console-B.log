@@ -1,0 +1,14 @@
+INFO:     Started server process [4022]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8011 (Press CTRL+C to quit)
+INFO:     127.0.0.1:59672 - "GET /api/state HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36300 - "POST /api/note HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47926 - "POST /api/hold/P2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38558 - "POST /api/note HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56190 - "POST /api/hold/P2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48922 - "POST /api/approve/plan-e5eedf7b3e HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38108 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38108 - "GET /api/state HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38108 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:38108 - "GET /api/state HTTP/1.1" 200 OK

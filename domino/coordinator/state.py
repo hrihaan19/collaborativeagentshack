@@ -36,6 +36,9 @@ class CoordinatorState:
         self.audit_path = self.dir / "audit.jsonl"
         self.jobs_dir = self.dir / "jobs"
         self.jobs_dir.mkdir(exist_ok=True)
+        # API-owned (reveal, QR tokens, rate limit). The ServerApp never writes this
+        # file, so a slow Flower round can never clobber a button press.
+        self.ui_path = self.dir / "ui.json"
 
     # ------------------------------------------------------------ load/save
     def load(self) -> dict:
@@ -44,6 +47,16 @@ class CoordinatorState:
     def save(self, st: dict) -> None:
         st["updated_at"] = now_iso()
         write_json(self.path, st)
+
+    def load_ui(self) -> dict:
+        return read_json(self.ui_path, self._empty_ui())
+
+    def save_ui(self, ui: dict) -> None:
+        write_json(self.ui_path, ui)
+
+    @staticmethod
+    def _empty_ui() -> dict:
+        return {"reveal": {"plan_id": None, "revealed_at": None}, "tokens": {}, "last_request_at": 0}
 
     @staticmethod
     def _empty() -> dict:
@@ -54,8 +67,7 @@ class CoordinatorState:
             "plan": None,
             "plan_history": [],
             "events": [],
-            "reveal": {"plan_id": None, "revealed_at": None},
-            "activation": {"tokens": {}, "last_activation_at": None, "activations": []},
+            "activation": {"last_activation_at": None, "activations": []},
         }
 
     # --------------------------------------------------------------- events

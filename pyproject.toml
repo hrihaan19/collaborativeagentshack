@@ -24,6 +24,7 @@ dev = ["pytest>=8"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["domino"]
+include = ["domino/**/*.html"]
 
 # --- Flower app (flwr 1.39.0, ServerApp/ClientApp; see README for the AgentApp decision)
 [tool.flwr.app]

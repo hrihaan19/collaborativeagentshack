@@ -1,0 +1,14 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Domino — add a fictional donor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0;font:18px system-ui,sans-serif;background:#0d1117;color:#e6edf3;text-align:center;padding:0 16px}
+.banner{background:#6e1a1a;color:#fff;padding:10px;font-weight:800;margin:0 -16px}
+button{font-size:24px;padding:22px 30px;border-radius:14px;border:0;background:#b8860b;color:#111;font-weight:800;margin-top:40px;width:100%;max-width:420px}
+.mut{color:#8b949e;font-size:14px;margin-top:24px}#out{margin-top:24px;font-weight:700}</style></head><body>
+<div class="banner">SYNTHETIC DEMO — NOT A CLINICAL MATCHING TOOL</div>
+<h2>No data is collected. Nothing here is real.</h2>
+<button id="b" onclick="go()">ADD A FICTIONAL DONOR</button>
+<div id="out"></div>
+<div class="mut">This activates the fictional fixture donor N0 at Hospital C (Abu Dhabi, UAE). The coordinator can only reach the hospital through Flower; the hospital decides what to do with the request. Watch the dashboard.</div>
+<script>
+async function go(){const b=document.getElementById('b');b.disabled=true;const r=await fetch('/api/activate/qr?token={{TOKEN}}',{method:'POST'});const j=await r.json().catch(()=>({}));document.getElementById('out').textContent=r.ok?'Sent to Hospital C through Flower. Look at the table.':(j.detail||('error '+r.status));}
+</script></body></html>

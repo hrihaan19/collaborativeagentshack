@@ -1,0 +1,47 @@
+{
+ "label": "VERIFIED",
+ "flower_run_id": "3988973666467498870",
+ "hospital_to_node": {
+  "C": [
+   17707147246835290796
+  ],
+  "A": [
+   177454847794493307
+  ],
+  "B": [
+   10112905917919172903
+  ]
+ },
+ "sample_message_ids": [
+  "bec2cea1314422930a0644dc3111a3ca63917e6347edfdbe2d7b579484f2364e",
+  "f1e13538e37f3db2934556842bbd52d87e5c14743e168fa0e6aa4a8bc4ddd21f",
+  "a31dab238df33db84023fbd215147907c45f9c0005f7519408d9d9dc6ec594bd"
+ ],
+ "edges": [
+  [
+   "P1",
+   "P2"
+  ],
+  [
+   "P1",
+   "W4"
+  ],
+  [
+   "P2",
+   "P3"
+  ],
+  [
+   "P3",
+   "P1"
+  ]
+ ],
+ "plan": {
+  "state": "PROPOSED",
+  "kind": "CYCLE",
+  "order": [
+   "P1",
+   "P2",
+   "P3"
+  ]
+ }
+}
